@@ -75,7 +75,8 @@ def train_ridge_probe(
         pca = PCA(n_components=n_comp)
         X_train = pca.fit_transform(X_train)
         X_test = pca.transform(X_test)
-        X_pca = pca.fit_transform(X)
+        # Use already-fitted PCA to transform full X (no data leakage)
+        X_pca = pca.transform(X)
     else:
         X_pca = X
 
