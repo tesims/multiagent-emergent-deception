@@ -7,7 +7,7 @@ name = "multiagent-emergent-deception"
 version = "1.0.0"
 description = "Mechanistic interpretability for detecting emergent deception in LLM negotiation agents"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {text = "AGPL-3.0"}
 authors = [
     {name = "Teanna Sims"}
 ]
