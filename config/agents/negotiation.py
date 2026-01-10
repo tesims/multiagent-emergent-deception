@@ -1,22 +1,25 @@
 """Configuration constants for the negotiation framework.
 
 This module provides centralized configuration for all negotiation components.
-Users can modify these values to tune agent behavior, evaluation parameters,
-and algorithm settings.
+These are READ-ONLY class attributes - do not modify at runtime.
 
 Usage:
     # Import specific config classes
+    from config.agents.negotiation import (
         StrategyConfig,
         EvaluationConfig,
         ModuleDefaults,
     )
 
-    # Use in code
+    # Use in code (read-only)
     if offer >= StrategyConfig.COOPERATIVE_ACCEPTANCE_THRESHOLD * position:
         accept_offer()
 
-    # Or override for experiments
-    StrategyConfig.COOPERATIVE_ACCEPTANCE_THRESHOLD = 0.75
+WARNING: Do NOT modify these class attributes at runtime:
+    StrategyConfig.COOPERATIVE_ACCEPTANCE_THRESHOLD = 0.75  # BAD - causes cross-test contamination
+
+For experiments with different values, use ExperimentConfig from config/experiment.py
+which provides proper isolated configuration via dataclass instances.
 """
 
 from dataclasses import dataclass
