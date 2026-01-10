@@ -47,9 +47,9 @@ class ModelConfig:
 
 @dataclass
 class EvaluatorConfig:
-    """Lightweight evaluator model for ground truth extraction.
+    """Lightweight local evaluator model for ground truth extraction.
 
-    The evaluator is a separate (usually smaller) model that judges whether
+    The evaluator is a separate (smaller) model that judges whether
     the subject model's responses are deceptive. This separation ensures:
     1. The subject model is tested without self-evaluation bias
     2. Faster evaluation with a lightweight model
@@ -59,22 +59,8 @@ class EvaluatorConfig:
     enabled: bool = True
     """Enable separate evaluator model."""
 
-    api: Literal["local", "together", "google", None] = "local"
-    """Evaluator API:
-    - 'local': Load google/gemma-2-2b-it locally (~2GB VRAM, no API needed)
-    - 'together': Use Together AI API (requires TOGETHER_API_KEY)
-    - 'google': Use Google AI Studio API (requires GOOGLE_API_KEY)
-    - None: Use subject model for self-evaluation (not recommended)
-    """
-
-    local_model: str = "google/gemma-2-2b-it"
-    """Model to use for local evaluation."""
-
-    together_model: str = "google/gemma-2-4b-it"
-    """Model to use with Together AI."""
-
-    google_model: str = "gemini-1.5-flash"
-    """Model to use with Google AI Studio."""
+    model: str = "google/gemma-2-2b-it"
+    """Lightweight model for evaluation (~2GB VRAM)."""
 
     max_tokens: int = 64
     """Max tokens for evaluator responses (short = faster)."""

@@ -666,6 +666,8 @@ def run_full_analysis(data_path: str) -> Dict[str, Any]:
     print(f"{'='*60}")
 
     # Load data
+    # NOTE: weights_only=False needed for dicts with mixed types
+    # SECURITY: Only load files YOU generated - pickle can execute arbitrary code
     print(f"\nLoading data from: {data_path}")
     data = torch.load(data_path, weights_only=False)
 

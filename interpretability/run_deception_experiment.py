@@ -462,6 +462,8 @@ def main():
         print(f"{'='*60}")
 
         # Load activations for causal tests
+        # NOTE: weights_only=False needed because we save dicts with mixed types (tensors + lists)
+        # Only load files YOU generated - pickle can execute arbitrary code
         data = torch.load(str(activations_path), weights_only=False)
         # Convert bfloat16 to float32 before numpy (numpy doesn't support bfloat16)
         activations = {

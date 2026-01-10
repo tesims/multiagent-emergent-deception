@@ -43,13 +43,6 @@ from .scenarios.contest_scenarios import (
     create_scenario,
 )
 
-# Evaluation harness
-from .evaluation_harness import (
-    ExperimentRunner,
-    ExperimentConfig,
-    ALL_MODULES,
-    create_ablation_configs,
-)
 
 # Baseline agents
 from .baseline_agents import (
