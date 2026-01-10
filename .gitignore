@@ -47,3 +47,4 @@ checkpoints/
 # OS
 .DS_Store
 Thumbs.db
+.deepeval/
