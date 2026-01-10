@@ -39,7 +39,7 @@ from negotiation.constants import (
     MODULE_COMPONENT_NAMES,
     ModuleType,
 )
-from negotiation.config import (
+from config.agents.negotiation import (
     AlgorithmConfig,
     DeceptionDetectionConfig,
     EvaluationConfig,

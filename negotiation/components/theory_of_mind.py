@@ -8,7 +8,7 @@ from collections import deque
 
 from concordia_mini.typing import entity_component
 from concordia_mini.typing import entity as entity_lib
-from negotiation.config import (
+from config.agents.negotiation import (
     DeceptionDetectionConfig,
     TheoryOfMindConfig,
 )

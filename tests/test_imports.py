@@ -13,7 +13,8 @@ def test_concordia_mini_imports():
 
 def test_negotiation_imports():
     """Test that negotiation modules import."""
-    from negotiation import config, constants
+    from config.agents import negotiation as config
+    from negotiation import constants
     from negotiation.components import theory_of_mind
     assert config is not None
     assert constants is not None
@@ -21,7 +22,7 @@ def test_negotiation_imports():
 
 def test_negotiation_config():
     """Test that config classes are available."""
-    from negotiation.config import (
+    from config.agents.negotiation import (
         StrategyConfig,
         EvaluationConfig,
         DeceptionDetectionConfig,

@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from negotiation.config import ParsingConfig
+from config.agents.negotiation import ParsingConfig
 
 
 def parse_structured_response(

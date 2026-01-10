@@ -6,7 +6,6 @@ and algorithm settings.
 
 Usage:
     # Import specific config classes
-    from negotiation.config import (
         StrategyConfig,
         EvaluationConfig,
         ModuleDefaults,

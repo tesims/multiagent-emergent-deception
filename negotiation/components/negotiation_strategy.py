@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 from concordia_mini.typing import entity_component
 
-from negotiation.config import StrategyConfig
+from config.agents.negotiation import StrategyConfig
 
 
 @dataclasses.dataclass
