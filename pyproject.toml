@@ -31,4 +31,4 @@ dev = ["pytest>=7.0", "pylint"]
 run-deception-experiment = "interpretability.run_deception_experiment:main"
 
 [tool.setuptools.packages.find]
-include = ["concordia_mini*", "negotiation*", "interpretability*"]
+include = ["concordia_mini*", "negotiation*", "interpretability*", "config*"]
