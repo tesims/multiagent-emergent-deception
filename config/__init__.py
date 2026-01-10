@@ -25,6 +25,7 @@ Available Configurations:
 from config.experiment import (
     ExperimentConfig,
     ModelConfig,
+    EvaluatorConfig,
     ProbeConfig,
     CausalConfig,
     ScenarioConfig,
@@ -41,6 +42,7 @@ __all__ = [
     # Core experiment configs
     "ExperimentConfig",
     "ModelConfig",
+    "EvaluatorConfig",
     "ProbeConfig",
     "CausalConfig",
     "ScenarioConfig",
