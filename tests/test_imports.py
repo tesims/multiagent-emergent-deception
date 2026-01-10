@@ -19,12 +19,44 @@ def test_negotiation_imports():
     assert constants is not None
 
 
+def test_negotiation_config():
+    """Test that config classes are available."""
+    from negotiation.config import (
+        StrategyConfig,
+        EvaluationConfig,
+        DeceptionDetectionConfig,
+    )
+    assert StrategyConfig is not None
+    assert EvaluationConfig is not None
+
+
+@pytest.mark.skipif(
+    not pytest.importorskip("torch", reason="PyTorch not available"),
+    reason="Requires PyTorch"
+)
 def test_interpretability_scenarios():
-    """Test that scenarios are defined."""
+    """Test that scenarios are defined (requires PyTorch)."""
     from interpretability.emergent_prompts import EMERGENT_SCENARIOS
     assert len(EMERGENT_SCENARIOS) == 6
     assert "ultimatum_bluff" in EMERGENT_SCENARIOS
     assert "alliance_betrayal" in EMERGENT_SCENARIOS
+
+
+def test_scenarios_without_torch():
+    """Test scenarios can be imported directly."""
+    # Import the module directly without going through __init__
+    import importlib.util
+    import os
+
+    spec = importlib.util.spec_from_file_location(
+        "emergent_prompts",
+        os.path.join(os.path.dirname(__file__), "../interpretability/emergent_prompts.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert hasattr(module, "EMERGENT_SCENARIOS")
+    assert len(module.EMERGENT_SCENARIOS) == 6
 
 
 if __name__ == "__main__":
