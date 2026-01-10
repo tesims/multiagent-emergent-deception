@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -54,7 +54,7 @@ class DeceptionIndicator:
   round_number: int
 
 
-class SocialIntelligenceGM(negotiation_modules.NegotiationGMModule):
+class SocialIntelligenceGM(gm_modules.NegotiationGMModule):
   """GM module for managing emotional and social dynamics."""
 
   # Emotion categories
@@ -272,7 +272,7 @@ class SocialIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action for emotional appropriateness."""
     # Check if action might damage rapport
@@ -294,7 +294,7 @@ class SocialIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update social/emotional state based on events."""
     # Detect emotions
@@ -334,7 +334,7 @@ class SocialIntelligenceGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get social/emotional context for observations."""
     observation = "\nSOCIAL DYNAMICS:\n"
@@ -448,7 +448,7 @@ class SocialIntelligenceGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'social_intelligence',
     SocialIntelligenceGM
 )

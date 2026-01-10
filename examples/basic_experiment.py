@@ -1,7 +1,7 @@
 """Basic example of running a deception detection experiment."""
 
-from interpretability.emergent_prompts import EMERGENT_SCENARIOS
-from interpretability.interpretability_evaluation import EvaluationConfig
+from interpretability.scenarios.emergent_prompts import EMERGENT_SCENARIOS
+from interpretability.evaluation import EvaluationConfig
 
 # Show available scenarios
 print("Available deception scenarios:")

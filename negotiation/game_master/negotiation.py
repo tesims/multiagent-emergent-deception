@@ -23,9 +23,9 @@ from concordia_mini.agents import entity_agent_with_logging
 from concordia_mini.associative_memory import basic_associative_memory
 from concordia_mini.components import agent as actor_components
 from concordia_mini.components import game_master as gm_components
-from negotiation.game_master.components import negotiation_state
-from negotiation.game_master.components import negotiation_validation
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_state
+from negotiation.game_master.components import gm_validation
+from negotiation.game_master.components import gm_modules
 from concordia_mini.language_model import language_model
 from concordia_mini.thought_chains import thought_chains as thought_chains_lib
 from concordia_mini.typing import prefab as prefab_lib
@@ -160,7 +160,7 @@ class NegotiationGameMaster(prefab_lib.Prefab):
 
     # Negotiation state tracking
     negotiation_state_key = 'negotiation_state'
-    negotiation_state_tracker = negotiation_state.NegotiationStateTracker(
+    negotiation_state_tracker = gm_state.NegotiationStateTracker(
         initial_phase='opening',
         max_rounds=max_rounds,
         enable_deadlines=enable_deadlines,
@@ -169,7 +169,7 @@ class NegotiationGameMaster(prefab_lib.Prefab):
 
     # Negotiation validation
     negotiation_validator_key = 'negotiation_validator'
-    negotiation_validator = negotiation_validation.NegotiationValidator(
+    negotiation_validator = gm_validation.NegotiationValidator(
         domain_type=negotiation_type,
         enable_batna_check=enable_batna_validation,
         enable_fairness_check=enable_fairness_check,
@@ -313,14 +313,14 @@ class NegotiationGameMaster(prefab_lib.Prefab):
 
     # Auto-detect modules if requested
     if auto_detect_modules:
-      agent_modules = negotiation_modules.detect_agent_modules(self.entities)
-      suggested_modules = negotiation_modules.suggest_gm_modules(agent_modules)
+      agent_modules = gm_modules.detect_agent_modules(self.entities)
+      suggested_modules = gm_modules.suggest_gm_modules(agent_modules)
       gm_modules.extend([m for m in suggested_modules if m not in gm_modules])
 
     # Create module instances
     for module_name in gm_modules:
       config = gm_module_configs.get(module_name, {})
-      module_instance = negotiation_modules.NegotiationGMModuleRegistry.create_module(
+      module_instance = gm_modules.NegotiationGMModuleRegistry.create_module(
           module_name, config
       )
       if module_instance:

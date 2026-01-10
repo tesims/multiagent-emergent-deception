@@ -840,7 +840,7 @@ class InterpretabilityConfig:
 
   # ---------------------------------------------------------------------------
   # Deception Detection Thresholds
-  # Used in interpretability_evaluation.py for ground truth labeling
+  # Used in evaluation.py for ground truth labeling
   # Source: Deception taxonomy from Apollo Research + negotiation ethics lit
   # ---------------------------------------------------------------------------
 

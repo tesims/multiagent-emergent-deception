@@ -36,7 +36,7 @@ from .metrics import (
 )
 
 # Scenarios
-from .contest_scenarios import (
+from .scenarios.contest_scenarios import (
     FisheryManagementScenario,
     TreatyNegotiationScenario,
     RealityGameshowScenario,
@@ -91,7 +91,7 @@ from .llm_evaluation import (
 )
 
 # Interpretability + Evaluation (single run captures both)
-from .interpretability_evaluation import (
+from .evaluation import (
     InterpretabilityRunner,
     TransformerLensWrapper,
     ActivationSample,
@@ -100,7 +100,7 @@ from .interpretability_evaluation import (
 )
 
 # Mechanistic Interpretability Tools (TransformerLens, SAE, Probing)
-from .mech_interp_tools import (
+from .probes.mech_interp_tools import (
     verify_installation,
     verify_gemma_loading,
     verify_sae_loading,
@@ -116,7 +116,7 @@ from .mech_interp_tools import (
 )
 
 # Emergent Deception Scenarios (incentive-based, no explicit deception instructions)
-from .emergent_prompts import (
+from .scenarios.emergent_prompts import (
     EMERGENT_SCENARIOS,
     IncentiveCondition,
     get_emergent_prompt,
@@ -127,7 +127,7 @@ from .emergent_prompts import (
 )
 
 # Instructed Deception Scenarios (Apollo Research style)
-from .deception_scenarios import (
+from .scenarios.deception_scenarios import (
     SCENARIOS as INSTRUCTED_SCENARIOS,
     Condition,
     ExperimentMode,
@@ -140,7 +140,7 @@ from .deception_scenarios import (
 )
 
 # Probe Training and Analysis
-from .train_probes import (
+from .probes.train_probes import (
     train_ridge_probe,
     train_mass_mean_probe,
     compute_generalization_auc,
@@ -150,7 +150,7 @@ from .train_probes import (
 )
 
 # Sanity Checks for Probe Validation
-from .sanity_checks import (
+from .probes.sanity_checks import (
     run_all_sanity_checks,
     run_causal_validation,
     print_limitations,
@@ -160,7 +160,7 @@ from .sanity_checks import (
 )
 
 # Causal Validation (activation patching, ablation, steering)
-from .causal_validation import (
+from .causal.causal_validation import (
     activation_patching_test,
     ablation_test,
     steering_vector_test,

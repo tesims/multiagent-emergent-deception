@@ -36,7 +36,7 @@ def test_negotiation_config():
 )
 def test_interpretability_scenarios():
     """Test that scenarios are defined (requires PyTorch)."""
-    from interpretability.emergent_prompts import EMERGENT_SCENARIOS
+    from interpretability.scenarios.emergent_prompts import EMERGENT_SCENARIOS
     assert len(EMERGENT_SCENARIOS) == 6
     assert "ultimatum_bluff" in EMERGENT_SCENARIOS
     assert "alliance_betrayal" in EMERGENT_SCENARIOS
@@ -50,7 +50,7 @@ def test_scenarios_without_torch():
 
     spec = importlib.util.spec_from_file_location(
         "emergent_prompts",
-        os.path.join(os.path.dirname(__file__), "../interpretability/emergent_prompts.py")
+        os.path.join(os.path.dirname(__file__), "../interpretability/scenarios/emergent_prompts.py")
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

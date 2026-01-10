@@ -30,7 +30,7 @@ from .metrics import (
     calculate_effect_size,
     interpret_effect_size
 )
-from .contest_scenarios import (
+from .scenarios.contest_scenarios import (
     BaseScenario,
     FisheryManagementScenario,
     TreatyNegotiationScenario,

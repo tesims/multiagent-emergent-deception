@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -42,7 +42,7 @@ class TemporalCommitment:
   fulfilled: bool = False
 
 
-class TemporalDynamicsGM(negotiation_modules.NegotiationGMModule):
+class TemporalDynamicsGM(gm_modules.NegotiationGMModule):
   """GM module for managing temporal aspects of negotiations."""
 
   def __init__(
@@ -166,7 +166,7 @@ class TemporalDynamicsGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action against temporal commitments."""
     if not self._enforce_commitments:
@@ -186,7 +186,7 @@ class TemporalDynamicsGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update temporal state based on events."""
     # Track phase durations
@@ -236,7 +236,7 @@ class TemporalDynamicsGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get temporal context for observations."""
     observation = "\nTEMPORAL DYNAMICS:\n"
@@ -338,7 +338,7 @@ class TemporalDynamicsGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'temporal_dynamics',
     TemporalDynamicsGM
 )

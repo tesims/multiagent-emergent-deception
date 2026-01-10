@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -54,7 +54,7 @@ class CollectiveDecision:
   round_decided: int
 
 
-class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
+class CollectiveIntelligenceGM(gm_modules.NegotiationGMModule):
   """GM module for managing collective decision-making and coordination."""
 
   def __init__(
@@ -96,7 +96,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       participants: List[str],
       recent_actions: List[Tuple[str, str]],
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Optional[Coalition]:
     """Detect potential coalition formation from interaction patterns."""
     if not self._track_coalitions or len(participants) < 2:
@@ -146,7 +146,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       sender: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Track information sharing patterns."""
     if not self._enable_information_routing:
@@ -202,7 +202,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       participants: List[str],
       proposal: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Optional[CollectiveDecision]:
     """Assess potential for collective decision-making."""
     # Look for consensus indicators
@@ -239,7 +239,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
     self._collective_decisions.append(collective_decision)
     return collective_decision
 
-  def update_coalition_stability(self, context: negotiation_modules.ModuleContext) -> None:
+  def update_coalition_stability(self, context: gm_modules.ModuleContext) -> None:
     """Update stability of active coalitions."""
     for coalition in self._coalitions:
       if not coalition.active:
@@ -278,7 +278,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
 
   def detect_emergent_behavior(
       self,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> List[str]:
     """Detect emergent collective behaviors."""
     emergent_patterns = []
@@ -326,7 +326,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action for collective intelligence compliance."""
     # Check for coalition constraint violations
@@ -353,7 +353,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update collective intelligence state based on events."""
     # Track information sharing
@@ -378,7 +378,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get collective intelligence context for observations."""
     observation = "\nCOLLECTIVE INTELLIGENCE:\n"
@@ -546,7 +546,7 @@ class CollectiveIntelligenceGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'collective_intelligence',
     CollectiveIntelligenceGM
 )

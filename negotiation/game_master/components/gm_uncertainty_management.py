@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -54,7 +54,7 @@ class InformationRequest:
   granted: bool = False
 
 
-class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
+class UncertaintyManagementGM(gm_modules.NegotiationGMModule):
   """GM module for managing information asymmetry and uncertainty."""
 
   def __init__(
@@ -114,7 +114,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
   def calculate_uncertainty_metrics(
       self,
       participant: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> UncertaintyMetrics:
     """Calculate uncertainty metrics for a participant."""
     if participant not in self._uncertainty_metrics:
@@ -153,7 +153,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
       information_type: str,
       requester: str,
       provider: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> float:
     """Assess the value of information for strategic purposes."""
     base_value = 0.5
@@ -191,7 +191,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
       requester: str,
       target: str,
       request_text: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Process a request for information."""
     # Parse request type
@@ -248,7 +248,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action for uncertainty management compliance."""
     # Check for information revelation
@@ -270,7 +270,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update uncertainty state based on events."""
     # Track information-seeking behavior
@@ -310,7 +310,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get uncertainty context for observations."""
     observation = "\nUNCERTAINTY ANALYSIS:\n"
@@ -429,7 +429,7 @@ class UncertaintyManagementGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'uncertainty_management',
     UncertaintyManagementGM
 )

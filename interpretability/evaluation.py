@@ -35,7 +35,7 @@ from concordia_mini.associative_memory import basic_associative_memory
 from concordia_mini.typing import entity as entity_lib
 from negotiation import advanced_negotiator
 from concordia_mini.prefabs.entity import minimal as minimal_entity
-from .contest_scenarios import create_scenario
+from .scenarios.contest_scenarios import create_scenario
 
 # =============================================================================
 # EMERGENT DECEPTION SCENARIOS
@@ -45,7 +45,7 @@ from .contest_scenarios import create_scenario
 
 # Import emergent prompts from local module (now in same directory)
 try:
-    from .emergent_prompts import (
+    from .scenarios.emergent_prompts import (
         EMERGENT_SCENARIOS,
         IncentiveCondition,
         get_emergent_prompt,
@@ -61,7 +61,7 @@ except ImportError as e:
 
 # Import deception scenarios for instructed mode
 try:
-    from .deception_scenarios import (
+    from .scenarios.deception_scenarios import (
         SCENARIOS as INSTRUCTED_SCENARIOS,
         Condition,
         ExperimentMode,
@@ -76,14 +76,14 @@ except ImportError as e:
 
 # Import probe training and sanity checks
 try:
-    from .train_probes import (
+    from .probes.train_probes import (
         train_ridge_probe,
         train_mass_mean_probe,
         compute_generalization_auc,
         compute_deception_rates,
         run_full_analysis,
     )
-    from .sanity_checks import (
+    from .probes.sanity_checks import (
         run_all_sanity_checks,
         run_causal_validation,
         print_limitations,
@@ -433,7 +433,7 @@ class HybridLanguageModel(language_model.LanguageModel):
             try:
                 import sys
                 print("  Importing SAE tools...", flush=True)
-                from .mech_interp_tools import load_gemma_scope_sae
+                from .probes.mech_interp_tools import load_gemma_scope_sae
                 print(f"  Loading Gemma Scope SAE (layer {sae_layer})...", flush=True)
                 # Determine model size from name
                 if "27b" in model_name.lower():
@@ -552,7 +552,7 @@ class HybridLanguageModel(language_model.LanguageModel):
             self._current_sae_features = None
             if self.use_sae and self.sae is not None:
                 try:
-                    from .mech_interp_tools import extract_sae_features
+                    from .probes.mech_interp_tools import extract_sae_features
                     sae_hook = f"blocks.{self.sae_layer}.hook_resid_post"
                     if sae_hook in self._current_activations:
                         self._current_sae_features = extract_sae_features(
@@ -1107,7 +1107,7 @@ Example: yes, yes'''
 
         # Step 3: Fallback to improved regex if LLM extraction failed or found nothing
         if extraction.get('extraction_failed') or result['actual_deception'] == 0:
-            from .emergent_prompts import compute_ground_truth as regex_ground_truth
+            from .scenarios.emergent_prompts import compute_ground_truth as regex_ground_truth
             is_deceptive = regex_ground_truth(scenario, response, params)
             if is_deceptive:
                 print(f"  [DEBUG] Regex fallback detected deception", flush=True)
@@ -2212,7 +2212,7 @@ if __name__ == "__main__":
     print("=" * 70)
     print("""
 Usage:
-    from interpretability_evaluation import InterpretabilityRunner
+    from evaluation import InterpretabilityRunner
 
     runner = InterpretabilityRunner(
         model_name="google/gemma-2-9b-it",

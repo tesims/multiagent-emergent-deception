@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -33,7 +33,7 @@ class CulturalProfile:
   negotiation_pace: str  # 'fast', 'moderate', 'slow'
 
 
-class CulturalAwarenessGM(negotiation_modules.NegotiationGMModule):
+class CulturalAwarenessGM(gm_modules.NegotiationGMModule):
   """GM module for managing cultural dynamics in negotiations."""
 
   # Predefined cultural profiles
@@ -163,7 +163,7 @@ class CulturalAwarenessGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action for cultural appropriateness."""
     if not self._enforce_protocols:
@@ -182,7 +182,7 @@ class CulturalAwarenessGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update state based on negotiation events."""
     # Track cultural adaptation
@@ -207,7 +207,7 @@ class CulturalAwarenessGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get cultural context for observations."""
     observer_culture = self._participant_cultures.get(observer)
@@ -298,7 +298,7 @@ class CulturalAwarenessGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'cultural_awareness',
     CulturalAwarenessGM
 )

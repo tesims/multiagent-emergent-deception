@@ -15,9 +15,9 @@
 """Negotiation-specific game master components."""
 
 # Core negotiation components
-from negotiation.game_master.components import negotiation_state
-from negotiation.game_master.components import negotiation_validation
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_state
+from negotiation.game_master.components import gm_validation
+from negotiation.game_master.components import gm_modules
 
 # GM negotiation awareness modules
 from negotiation.game_master.components import gm_cultural_awareness
@@ -28,9 +28,9 @@ from negotiation.game_master.components import gm_collective_intelligence
 from negotiation.game_master.components import gm_strategy_evolution
 
 __all__ = [
-    'negotiation_state',
-    'negotiation_validation',
-    'negotiation_modules',
+    'gm_state',
+    'gm_validation',
+    'gm_modules',
     'gm_cultural_awareness',
     'gm_social_intelligence',
     'gm_temporal_dynamics',

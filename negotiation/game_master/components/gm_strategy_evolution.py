@@ -17,7 +17,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from negotiation.game_master.components import negotiation_modules
+from negotiation.game_master.components import gm_modules
 
 
 @dataclasses.dataclass
@@ -59,7 +59,7 @@ class PerformanceMetrics:
   counterpart_responses: Dict[str, float]  # How others respond
 
 
-class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
+class StrategyEvolutionGM(gm_modules.NegotiationGMModule):
   """GM module for tracking and facilitating strategy evolution."""
 
   # Strategy archetypes
@@ -111,7 +111,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
       self,
       participant: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> StrategySnapshot:
     """Analyze current strategy from participant's action."""
     # Detect strategy type based on keywords
@@ -258,7 +258,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
 
   def track_strategy_diffusion(
       self,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Track how strategies spread between participants."""
     # Analyze recent strategy transitions for diffusion patterns
@@ -288,7 +288,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
   def detect_innovation(
       self,
       snapshot: StrategySnapshot,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Optional[Dict[str, Any]]:
     """Detect innovative strategy behaviors."""
     # Look for novel tactic combinations
@@ -324,7 +324,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
       self,
       actor: str,
       action: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> Tuple[bool, Optional[str]]:
     """Validate action for strategy evolution compliance."""
     # Generally allow all actions - evolution module is observational
@@ -344,7 +344,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
       self,
       event: str,
       actor: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update strategy evolution state based on events."""
     if not self._track_evolution:
@@ -388,7 +388,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
       self,
       participant: str,
       snapshot: StrategySnapshot,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> None:
     """Update performance metrics for strategies."""
     key = (participant, snapshot.strategy_type)
@@ -417,7 +417,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
   def get_observation_context(
       self,
       observer: str,
-      context: negotiation_modules.ModuleContext,
+      context: gm_modules.ModuleContext,
   ) -> str:
     """Get strategy evolution context for observations."""
     observation = "\nSTRATEGY EVOLUTION:\n"
@@ -588,7 +588,7 @@ class StrategyEvolutionGM(negotiation_modules.NegotiationGMModule):
 
 
 # Register the module
-negotiation_modules.NegotiationGMModuleRegistry.register(
+gm_modules.NegotiationGMModuleRegistry.register(
     'strategy_evolution',
     StrategyEvolutionGM
 )
