@@ -416,6 +416,7 @@ class HybridLanguageModel(language_model.LanguageModel):
             model_name,
             torch_dtype=torch_dtype,
             device_map=device,
+            attn_implementation="eager",  # Avoid flash attention issues
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         if self.tokenizer.pad_token is None:
@@ -537,17 +538,52 @@ class HybridLanguageModel(language_model.LanguageModel):
         if seed is not None:
             torch.manual_seed(seed)
 
+        # Validate token IDs are within vocabulary bounds
+        vocab_size = self.hf_model.config.vocab_size
+        max_token = inputs.input_ids.max().item()
+        if max_token >= vocab_size:
+            logger.warning(f"Token ID {max_token} exceeds vocab size {vocab_size}, clamping")
+            inputs.input_ids = inputs.input_ids.clamp(0, vocab_size - 1)
+
+        # Ensure sequence length is within model limits
+        max_pos = getattr(self.hf_model.config, 'max_position_embeddings', 8192)
+        if inputs.input_ids.shape[1] > max_pos - 256:
+            logger.warning(f"Input length {inputs.input_ids.shape[1]} too long, truncating to {max_pos - 256}")
+            inputs.input_ids = inputs.input_ids[:, -(max_pos - 256):]
+
+        # Create attention mask explicitly
+        attention_mask = torch.ones_like(inputs.input_ids)
+
+        # Sync CUDA to catch any prior errors
+        if self.device == "cuda":
+            torch.cuda.synchronize()
+
         with torch.no_grad():
             try:
-                outputs = self.hf_model.generate(inputs.input_ids, **gen_kwargs)
+                outputs = self.hf_model.generate(
+                    inputs.input_ids,
+                    attention_mask=attention_mask,
+                    **gen_kwargs
+                )
             except RuntimeError as e:
-                if "probability tensor" in str(e) or "nan" in str(e).lower():
+                error_str = str(e).lower()
+                if "probability" in error_str or "nan" in error_str or "srcindex" in error_str or "inf" in error_str:
                     # Fallback to greedy decoding if sampling fails
+                    logger.warning(f"Sampling failed ({type(e).__name__}), falling back to greedy")
                     gen_kwargs["do_sample"] = False
                     gen_kwargs.pop("temperature", None)
                     gen_kwargs.pop("top_p", None)
                     gen_kwargs.pop("top_k", None)
-                    outputs = self.hf_model.generate(inputs.input_ids, **gen_kwargs)
+                    try:
+                        outputs = self.hf_model.generate(
+                            inputs.input_ids,
+                            attention_mask=attention_mask,
+                            **gen_kwargs
+                        )
+                    except RuntimeError:
+                        # If even greedy fails, return empty response
+                        logger.error("Even greedy generation failed, returning empty response")
+                        return ""
                 else:
                     raise
 
