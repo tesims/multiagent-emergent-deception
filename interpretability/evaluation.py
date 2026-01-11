@@ -1841,12 +1841,15 @@ Example: yes, yes'''
             main_agent = main_prefab.build(model=self.model, memory_bank=memory_bank)
         else:
             # Standard mode: Use advanced negotiator with cognitive modules
+            # CRITICAL: Remove default ethical constraints that tell agent to be honest
+            # For emergent deception research, we want the agent to decide based on incentives
             main_agent = advanced_negotiator.build_agent(
                 model=self.model,
                 memory_bank=memory_bank,
                 name="Negotiator",
                 goal=agent_prompt,  # Emergent prompt as goal
                 modules=agent_modules,
+                ethical_constraints="",  # Empty - let incentives drive behavior
                 module_configs={
                     'theory_of_mind': {
                         'max_recursion_depth': 2,
