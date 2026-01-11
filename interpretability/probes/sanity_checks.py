@@ -56,7 +56,7 @@ def sanity_check_random_labels(
         "mean_shuffled_r2": float(mean_r2),
         "std_shuffled_r2": float(np.std(shuffle_r2s)),
         "max_shuffled_r2": float(np.max(shuffle_r2s)),
-        "passed": mean_r2 < 0.05,  # Should be near 0
+        "passed": bool(mean_r2 < 0.05),  # Should be near 0
         "message": f"Shuffled R²: {mean_r2:.4f} (should be < 0.05)"
     }
 
@@ -89,7 +89,7 @@ def sanity_check_train_test_gap(
         "train_r2": float(train_r2),
         "test_r2": float(test_r2),
         "gap": float(gap),
-        "passed": gap < 0.2,  # Gap should be small
+        "passed": bool(gap < 0.2),  # Gap should be small
         "message": f"Train-test gap: {gap:.3f} (should be < 0.2)"
     }
 
@@ -105,7 +105,7 @@ def sanity_check_label_variance(y: np.ndarray) -> Dict[str, Any]:
         "min": float(np.min(y)),
         "max": float(np.max(y)),
         "n_unique": int(len(np.unique(y))),
-        "passed": std > 0.1,  # Need some variance
+        "passed": bool(std > 0.1),  # Need some variance
         "message": f"Label std: {std:.3f} (should be > 0.1)"
     }
 
@@ -150,7 +150,7 @@ def sanity_check_layer_0_baseline(
     mid_layer = layers[len(layers) // 2]
     mid_r2 = layer_r2s[mid_layer]
 
-    passed = mid_r2 > layer_0_r2
+    passed = bool(mid_r2 > layer_0_r2)
 
     return {
         "layer_0_r2": float(layer_0_r2),
