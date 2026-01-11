@@ -87,3 +87,8 @@ credentials.json
 *.h5
 *.hdf5
 data/
+
+# Personal/local files (contain credentials, IPs, etc.)
+docs/RUNPOD_QUICKSTART.md
+*_QUICKSTART.md
+*.local.md
