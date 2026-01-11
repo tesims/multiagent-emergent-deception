@@ -33,9 +33,8 @@ RunPod provides affordable GPU cloud instances ideal for ML research:
 
 | Model | Min VRAM | Recommended GPU | Cost (approx) |
 |-------|----------|-----------------|---------------|
-| `google/gemma-2-2b-it` | 4GB | RTX 4090 / A6000 | $0.30-0.50/hr |
-| `google/gemma-2-9b-it` | 20GB | A6000 48GB | $0.50-0.80/hr |
-| `google/gemma-2-27b-it` | 54GB | A100 80GB | $1.50-2.00/hr |
+| `google/gemma-2b-it` | 4GB | RTX 4090 / A6000 | $0.30-0.50/hr |
+| `google/gemma-7b-it` | 16GB | A6000 48GB | $0.50-0.80/hr |
 
 ---
 
@@ -219,7 +218,7 @@ pip install transformers==4.44.0 accelerate==0.33.0 huggingface_hub
 
 Gemma models require license acceptance:
 
-1. Go to [huggingface.co/google/gemma-2-9b-it](https://huggingface.co/google/gemma-2-9b-it)
+1. Go to [huggingface.co/google/gemma-2b-it](https://huggingface.co/google/gemma-2b-it)
 2. Click **"Agree and access repository"**
 3. Get token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 
@@ -259,13 +258,12 @@ deception run \
     # MODEL CONFIGURATION
     # ═══════════════════════════════════════════════════════════════
     --model MODEL_NAME \
-    # HuggingFace model identifier
+    # HuggingFace model identifier (must be TransformerLens compatible)
     # Options:
-    #   "google/gemma-2-2b-it"    - Fast, 4GB VRAM, good for testing
-    #   "google/gemma-2-9b-it"    - Recommended, 20GB VRAM, research quality
-    #   "google/gemma-2-27b-it"   - Best quality, 54GB VRAM
-    #   "meta-llama/Llama-3.1-8B-Instruct" - Alternative, no SAE support
-    # Default: "google/gemma-2-9b-it"
+    #   "google/gemma-2b-it"    - Fast, 4GB VRAM, good for testing
+    #   "google/gemma-7b-it"    - Better quality, 16GB VRAM
+    #   "meta-llama/Llama-2-7b-chat-hf" - Alternative architecture
+    # Default: "google/gemma-2b-it"
 
     --device DEVICE \
     # Compute device
@@ -364,8 +362,8 @@ deception run \
     --sae-layer NUM \
     # Which layer to extract SAE features from
     # Should be a middle-to-late layer
-    # Gemma 2B: 13, Gemma 9B: 21, Gemma 27B: 35
-    # Default: 21
+    # Gemma 2B: 12, Gemma 7B: 20
+    # Default: 12
 
     # ═══════════════════════════════════════════════════════════════
     # CAUSAL VALIDATION
@@ -419,7 +417,7 @@ deception run \
 # QUICK TEST: Verify setup works (2-5 minutes)
 # ═══════════════════════════════════════════════════════════════════════════
 deception run \
-    --model google/gemma-2-2b-it \    # Small model for fast testing
+    --model google/gemma-2b-it \       # Small model for fast testing
     --scenarios 1 \                    # Just 1 scenario
     --trials 2 \                       # 2 trials (4 total: 2 high + 2 low incentive)
     --max-rounds 2 \                   # Short negotiations
@@ -432,14 +430,15 @@ deception run \
 # DEVELOPMENT: Fast iteration while developing (10-20 minutes)
 # ═══════════════════════════════════════════════════════════════════════════
 deception run \
-    --model google/gemma-2-9b-it \    # Research-quality model
+    --model google/gemma-2b-it \       # Fast model for development
     --scenarios 3 \                    # Core scenarios
     --trials 10 \                      # Enough for basic statistics
     --max-rounds 3 \
+    --mode both \                      # Run emergent + instructed
     --fast \                           # Disable ToM for speed
     --hybrid \
     --sae \                            # Get interpretable features
-    --sae-layer 21 \
+    --sae-layer 12 \
     --device cuda \
     --dtype bfloat16 \
     --output /workspace/persistent/dev_run
@@ -448,13 +447,14 @@ deception run \
 # FULL EXPERIMENT: Publication-quality results (2-4 hours)
 # ═══════════════════════════════════════════════════════════════════════════
 deception run \
-    --model google/gemma-2-9b-it \    # Research-quality model
+    --model google/gemma-7b-it \       # Larger model for research
     --scenarios 6 \                    # All 6 emergent scenarios
     --trials 50 \                      # Strong statistics
     --max-rounds 3 \
+    --mode both \                      # Run emergent + instructed
     --hybrid \                         # Required for reasonable runtime
     --sae \                            # Interpretable features
-    --sae-layer 21 \
+    --sae-layer 20 \
     --causal \                         # Causal validation
     --causal-samples 30 \              # Robust causal tests
     --checkpoint-dir /workspace/persistent/checkpoints \  # Crash recovery
@@ -513,10 +513,11 @@ huggingface-cli login
 ```bash
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-2b-it \
+    --model google/gemma-2b-it \
     --scenarios 1 \
     --trials 1 \
     --max-rounds 2 \
+    --mode both \
     --hybrid \
     --device cuda \
     --dtype bfloat16 \
@@ -529,14 +530,15 @@ deception run \
 ```bash
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-2b-it \
+    --model google/gemma-2b-it \
     --scenarios 3 \
     --trials 10 \
     --max-rounds 3 \
+    --mode both \
     --fast \
     --hybrid \
     --sae \
-    --sae-layer 13 \
+    --sae-layer 12 \
     --device cuda \
     --dtype bfloat16 \
     --checkpoint-dir /workspace/persistent/checkpoints \
@@ -544,25 +546,26 @@ deception run \
     2>&1 | tee /workspace/persistent/experiments/dev_2b.log
 ```
 
-### Full Experiment (Gemma 9B - Recommended)
+### Full Experiment (Gemma 7B - Recommended)
 
 ```bash
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-7b-it \
     --scenarios 6 \
     --trials 50 \
     --max-rounds 3 \
+    --mode both \
     --hybrid \
     --sae \
-    --sae-layer 21 \
+    --sae-layer 20 \
     --causal \
     --causal-samples 30 \
     --device cuda \
     --dtype bfloat16 \
     --checkpoint-dir /workspace/persistent/checkpoints \
-    --output /workspace/persistent/experiments/full_9b \
-    2>&1 | tee /workspace/persistent/experiments/full_9b.log
+    --output /workspace/persistent/experiments/full_7b \
+    2>&1 | tee /workspace/persistent/experiments/full_7b.log
 ```
 
 ### Single Scenario (For Parallel Pods)
@@ -573,12 +576,14 @@ Run different scenarios on different pods, then merge results:
 # Pod 1: ultimatum_bluff
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-2b-it \
     --scenario-name ultimatum_bluff \
+    --mode both \
     --trials 50 \
     --max-rounds 3 \
     --hybrid \
     --sae \
+    --sae-layer 12 \
     --device cuda \
     --dtype bfloat16 \
     --output /workspace/persistent/experiments/ultimatum \
@@ -589,12 +594,14 @@ deception run \
 # Pod 2: alliance_betrayal
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-2b-it \
     --scenario-name alliance_betrayal \
+    --mode both \
     --trials 50 \
     --max-rounds 3 \
     --hybrid \
     --sae \
+    --sae-layer 12 \
     --device cuda \
     --dtype bfloat16 \
     --output /workspace/persistent/experiments/alliance \
@@ -614,11 +621,13 @@ pip install -e .
 # Resume or start new experiment
 cd /workspace/multiagent-emergent-deception && \
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-2b-it \
     --scenarios 6 \
     --trials 50 \
+    --mode both \
     --hybrid \
     --sae \
+    --sae-layer 12 \
     --causal \
     --checkpoint-dir /workspace/persistent/checkpoints \
     --output /workspace/persistent/experiments/resumed \
@@ -633,13 +642,14 @@ deception run \
 
 ```bash
 deception run \
-    --model google/gemma-2-2b-it \
+    --model google/gemma-2b-it \
     --scenarios 6 \
     --trials 25 \
+    --mode both \
     --fast \
     --hybrid \
     --sae \
-    --sae-layer 13 \
+    --sae-layer 12 \
     --device cuda \
     --dtype bfloat16 \
     --output /workspace/persistent/experiments/budget_run
@@ -651,12 +661,13 @@ deception run \
 
 ```bash
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-7b-it \
     --scenarios 6 \
     --trials 40 \
+    --mode both \
     --hybrid \
     --sae \
-    --sae-layer 21 \
+    --sae-layer 20 \
     --causal \
     --causal-samples 20 \
     --device cuda \
@@ -666,26 +677,6 @@ deception run \
 ```
 
 **Expected**: ~2-3 hours, publication-ready
-
-### Maximum Quality (A100 80GB, ~$1.80/hr)
-
-```bash
-deception run \
-    --model google/gemma-2-27b-it \
-    --scenarios 6 \
-    --trials 50 \
-    --hybrid \
-    --sae \
-    --sae-layer 35 \
-    --causal \
-    --causal-samples 30 \
-    --device cuda \
-    --dtype bfloat16 \
-    --checkpoint-dir /workspace/persistent/checkpoints \
-    --output /workspace/persistent/experiments/max_quality
-```
-
-**Expected**: ~4-6 hours, best possible results
 
 ---
 
@@ -743,7 +734,7 @@ tmux ls
 
 ```bash
 # Solution 1: Use smaller model
---model google/gemma-2-2b-it
+--model google/gemma-2b-it
 
 # Solution 2: Use bfloat16 (if not already)
 --dtype bfloat16
@@ -759,7 +750,7 @@ import torch; torch.cuda.empty_cache()
 
 ```bash
 # 1. Accept license at HuggingFace
-# Visit: https://huggingface.co/google/gemma-2-9b-it
+# Visit: https://huggingface.co/google/gemma-7b-it
 # Click "Agree and access repository"
 
 # 2. Re-login
@@ -841,8 +832,7 @@ scp -P {port} root@{pod-ip}:/workspace/persistent/experiments/full_9b/*.json ./r
 │                                                                           │
 │  MODEL SELECTION:                                                         │
 │  2B  → Testing, development, budget                                       │
-│  9B  → Research, publication (recommended)                                │
-│  27B → Maximum quality                                                    │
+│  7B  → Research, publication (recommended)                                │
 │                                                                           │
 │  PARALLEL EXECUTION:                                                      │
 │  Use --scenario-name on different pods                                    │

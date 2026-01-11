@@ -91,7 +91,7 @@ from config import ExperimentConfig
 
 # Auto-configure for Colab's GPU (T4 has ~16GB)
 config = ExperimentConfig.for_model(
-    "google/gemma-2-2b-it",  # 2B fits in Colab free tier
+    "google/gemma-2b-it",  # 2B fits in Colab free tier
     num_trials=10,
     scenarios=["ultimatum_bluff"],
 )
@@ -122,9 +122,9 @@ print(f"Best probe AUC: {analysis['best_probe']['auc']:.3f}")
 
 | Tier | GPU | VRAM | Recommended Model |
 |------|-----|------|-------------------|
-| Free | T4 | 16GB | `gemma-2-2b-it` |
-| Pro | A100 | 40GB | `gemma-2-9b-it` |
-| Pro+ | A100 | 80GB | `gemma-2-27b-it` |
+| Free | T4 | 16GB | `gemma-2b-it` |
+| Pro | A100 | 40GB | `gemma-7b-it` |
+| Pro+ | A100 | 80GB | `gemma-7b-it` |
 
 ### Using as a Library
 
@@ -140,7 +140,7 @@ from interpretability.causal import extract_deception_direction, run_full_causal
 
 # Check available model presets
 print(MODEL_PRESETS.keys())
-# dict_keys(['google/gemma-2-2b-it', 'google/gemma-2-9b-it', ...])
+# dict_keys(['google/gemma-2b-it', 'google/gemma-7b-it', ...])
 ```
 
 ---
@@ -155,7 +155,7 @@ from config import ExperimentConfig, ModelConfig, ScenarioConfig
 # 1. Create configuration
 config = ExperimentConfig(
     model=ModelConfig(
-        name="google/gemma-2-2b-it",  # Small model for testing
+        name="google/gemma-2b-it",  # Small model for testing
         device="cuda",
     ),
     scenarios=ScenarioConfig(
@@ -190,7 +190,7 @@ runner.save_dataset("activations.pt")
 deception run --trials 5
 
 # Full experiment with specific model
-deception run --model google/gemma-2-9b-it --trials 40 --causal
+deception run --model google/gemma-7b-it --trials 40 --causal
 
 # Train probes on existing data
 deception train --data activations.pt
@@ -213,13 +213,13 @@ The easiest way to configure experiments - everything auto-sets based on model:
 from config import ExperimentConfig
 
 # Just specify the model - SAE, probe layers, etc. auto-configure
-config = ExperimentConfig.for_model("google/gemma-2-2b-it")
-config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+config = ExperimentConfig.for_model("google/gemma-2b-it")
+config = ExperimentConfig.for_model("google/gemma-7b-it")
 
 # View what was configured
 config.print_config_summary()
 # Output:
-# Model: google/gemma-2-9b-it
+# Model: google/gemma-7b-it
 #   Layers: 42, d_model: 3584
 #   VRAM: ~20GB
 #   SAE: enabled (layer 31)
@@ -228,7 +228,7 @@ config.print_config_summary()
 
 # With custom settings
 config = ExperimentConfig.for_model(
-    "google/gemma-2-9b-it",
+    "google/gemma-7b-it",
     num_trials=100,
     scenarios=["ultimatum_bluff", "alliance_betrayal"],
 )
@@ -238,9 +238,9 @@ config = ExperimentConfig.for_model(
 
 | Model | VRAM | SAE | Auto-configured Layers |
 |-------|------|-----|------------------------|
-| `google/gemma-2-2b-it` | ~4GB | Yes (layer 20) | [6, 13, 20, 24] |
-| `google/gemma-2-9b-it` | ~20GB | Yes (layer 31) | [10, 21, 31, 38] |
-| `google/gemma-2-27b-it` | ~54GB | Yes (layer 34) | [11, 23, 34, 42] |
+| `google/gemma-2b-it` | ~4GB | Yes (layer 20) | [6, 13, 20, 24] |
+| `google/gemma-7b-it` | ~20GB | Yes (layer 31) | [10, 21, 31, 38] |
+| `google/gemma-7b-it` | ~54GB | Yes (layer 34) | [11, 23, 34, 42] |
 | `meta-llama/Llama-3.1-8B-Instruct` | ~16GB | No | [8, 16, 24, 30] |
 
 ### Configuration Hierarchy
@@ -261,14 +261,14 @@ from config import ModelConfig
 
 # Manual configuration (auto_configure=True by default)
 model = ModelConfig(
-    name="google/gemma-2-9b-it",  # SAE settings auto-set from this
+    name="google/gemma-7b-it",  # SAE settings auto-set from this
     device="cuda",
     dtype="bfloat16",
 )
 
 # Or disable auto-configuration for full control
 model = ModelConfig(
-    name="google/gemma-2-9b-it",
+    name="google/gemma-7b-it",
     auto_configure=False,         # Manual mode
     sae_release="custom-sae",
     sae_layer=25,
@@ -281,7 +281,7 @@ model = ModelConfig(
 from config import ProbeConfig
 
 # Auto-configure layers for model (recommended)
-probes = ProbeConfig.for_model("google/gemma-2-9b-it")
+probes = ProbeConfig.for_model("google/gemma-7b-it")
 # layers_to_probe = [10, 21, 31, 38] (auto-set)
 
 # Or manual configuration
@@ -427,7 +427,7 @@ StrategyConfig.COOPERATIVE_ACCEPTANCE_THRESHOLD = 0.90
 
 # GOOD - use ExperimentConfig for experiment-specific settings
 from config import ExperimentConfig
-config = ExperimentConfig.for_model("google/gemma-2-2b-it")
+config = ExperimentConfig.for_model("google/gemma-2b-it")
 ```
 
 ---
@@ -448,7 +448,7 @@ config = ExperimentConfig.for_model("google/gemma-2-2b-it")
 # Full options
 deception run \
     --mode emergent \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-7b-it \
     --device cuda \
     --dtype bfloat16 \
     --scenarios 6 \
@@ -465,7 +465,7 @@ deception run \
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--mode` | Experiment mode | `emergent` |
-| `--model` | HuggingFace model | `google/gemma-2-9b-it` |
+| `--model` | HuggingFace model | `google/gemma-7b-it` |
 | `--device` | Compute device | auto-detect |
 | `--dtype` | Model precision | `bfloat16` |
 | `--scenarios` | Number of scenarios | `3` |
@@ -754,7 +754,7 @@ deception run --trials 40 --scenarios 6 --causal --causal-samples 30
 # Full experiment with all features
 deception run \
     --mode emergent \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-7b-it \
     --trials 50 \
     --scenarios 6 \
     --hybrid \
@@ -829,7 +829,7 @@ samples = runner.activation_samples  # List[ActivationSample]
 **Out of Memory:**
 ```bash
 # Use smaller model
-deception run --model google/gemma-2-2b-it
+deception run --model google/gemma-2b-it
 
 # Use float16 precision
 deception run --dtype float16

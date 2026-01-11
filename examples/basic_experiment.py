@@ -38,7 +38,7 @@ from config import ExperimentConfig, ModelConfig, ScenarioConfig
 # Create experiment config
 config = ExperimentConfig(
     model=ModelConfig(
-        name="google/gemma-2-2b-it",
+        name="google/gemma-2b-it",
         device="cuda",
     ),
     scenarios=ScenarioConfig(

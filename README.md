@@ -26,10 +26,10 @@ pip install -e .
 
 ```bash
 # Quick test
-deception run --model google/gemma-2-2b-it --trials 5
+deception run --model google/gemma-2b-it --trials 5 --mode both
 
 # Full experiment with causal validation
-deception run --model google/gemma-2-9b-it --trials 40 --causal
+deception run --model google/gemma-7b-it --trials 40 --mode both --causal
 
 # List available scenarios
 deception scenarios
@@ -42,7 +42,7 @@ from config import ExperimentConfig
 from interpretability import InterpretabilityRunner
 
 # Auto-configure everything based on model
-config = ExperimentConfig.for_model("google/gemma-2-2b-it", num_trials=10)
+config = ExperimentConfig.for_model("google/gemma-2b-it", num_trials=10)
 config.print_config_summary()
 
 # Run experiment
@@ -68,23 +68,22 @@ runner.save_dataset("activations.pt")
 
 # Run experiment (2B model fits in free tier)
 from config import ExperimentConfig
-config = ExperimentConfig.for_model("google/gemma-2-2b-it", num_trials=5)
+config = ExperimentConfig.for_model("google/gemma-2b-it", num_trials=5)
 ```
 
 ## Supported Models
 
-Models auto-configure SAE settings and probe layers:
+Models must be compatible with TransformerLens. Supported Gemma models:
 
 | Model | VRAM | SAE | Use Case |
 |-------|------|-----|----------|
-| `google/gemma-2-2b-it` | ~4GB | Yes | Fast iteration, Colab free |
-| `google/gemma-2-9b-it` | ~20GB | Yes | Research quality |
-| `google/gemma-2-27b-it` | ~54GB | Yes | Best performance |
-| `meta-llama/Llama-3.1-8B-Instruct` | ~16GB | No | Alternative architecture |
+| `google/gemma-2b-it` | ~4GB | Yes | Fast iteration, Colab free |
+| `google/gemma-7b-it` | ~16GB | Yes | Research quality |
+| `meta-llama/Llama-2-7b-chat-hf` | ~14GB | No | Alternative architecture |
 
 ```python
 # Just change the model - everything else auto-configures
-config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+config = ExperimentConfig.for_model("google/gemma-2b-it")
 ```
 
 ## Configuration
@@ -95,14 +94,14 @@ All experiments are configured through `config/`:
 from config import ExperimentConfig, MODEL_PRESETS
 
 # Option 1: Auto-configure (recommended)
-config = ExperimentConfig.for_model("google/gemma-2-9b-it", num_trials=50)
+config = ExperimentConfig.for_model("google/gemma-2b-it", num_trials=50)
 
 # Option 2: Manual configuration
 from config import ModelConfig, ScenarioConfig, ProbeConfig
 
 config = ExperimentConfig(
-    model=ModelConfig(name="google/gemma-2-9b-it"),
-    probes=ProbeConfig.for_model("google/gemma-2-9b-it"),
+    model=ModelConfig(name="google/gemma-2b-it"),
+    probes=ProbeConfig.for_model("google/gemma-2b-it"),
     scenarios=ScenarioConfig(
         scenarios=["ultimatum_bluff", "alliance_betrayal"],
         num_trials=50,

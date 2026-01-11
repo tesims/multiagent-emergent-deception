@@ -521,9 +521,9 @@ Model-specific layer selection (from `config/experiment.py`):
 
 | Model | Layers | SAE Layer | Probe Layers |
 |-------|--------|-----------|--------------|
-| gemma-2-2b-it | 26 | 20 | [6, 13, 20, 24] |
-| gemma-2-9b-it | 42 | 31 | [10, 21, 31, 38] |
-| gemma-2-27b-it | 46 | 34 | [11, 23, 34, 42] |
+| gemma-2b-it | 26 | 20 | [6, 13, 20, 24] |
+| gemma-7b-it | 42 | 31 | [10, 21, 31, 38] |
+| gemma-7b-it | 46 | 34 | [11, 23, 34, 42] |
 | Llama-3.1-8B | 32 | N/A | [8, 16, 24, 30] |
 
 Rationale: Probe at ~25%, 50%, 75%, 90% depth to find optimal encoding layer.
@@ -1056,11 +1056,11 @@ Top features = features with highest importance
 #### CLI
 ```bash
 # Quick test
-deception run --model google/gemma-2-2b-it --trials 5
+deception run --model google/gemma-2b-it --trials 5
 
 # Full experiment
 deception run \
-    --model google/gemma-2-9b-it \
+    --model google/gemma-7b-it \
     --trials 40 \
     --scenarios 6 \
     --sae \
@@ -1074,7 +1074,7 @@ from config import ExperimentConfig
 from interpretability import InterpretabilityRunner
 
 # Auto-configure
-config = ExperimentConfig.for_model("google/gemma-2-9b-it", num_trials=40)
+config = ExperimentConfig.for_model("google/gemma-7b-it", num_trials=40)
 
 # Run
 runner = InterpretabilityRunner(
@@ -1128,9 +1128,9 @@ multiagent-emergent-deception/
 
 | Model | VRAM | Recommended GPU |
 |-------|------|-----------------|
-| gemma-2-2b-it | ~4GB | T4, RTX 3060 |
-| gemma-2-9b-it | ~20GB | A100-40GB, RTX 4090 |
-| gemma-2-27b-it | ~54GB | A100-80GB |
+| gemma-2b-it | ~4GB | T4, RTX 3060 |
+| gemma-7b-it | ~20GB | A100-40GB, RTX 4090 |
+| gemma-7b-it | ~54GB | A100-80GB |
 
 ### 13.4 Expected Runtime
 
@@ -1148,14 +1148,14 @@ multiagent-emergent-deception/
 
 ```python
 MODEL_PRESETS = {
-    "google/gemma-2-2b-it": {
+    "google/gemma-2b-it": {
         "n_layers": 26,
         "d_model": 2304,
         "sae_release": "gemma-scope-2b-pt-res-canonical",
         "sae_layer": 20,
         "layers_to_probe": [6, 13, 20, 24],
     },
-    "google/gemma-2-9b-it": {
+    "google/gemma-7b-it": {
         "n_layers": 42,
         "d_model": 3584,
         "sae_release": "gemma-scope-9b-pt-res-canonical",
@@ -1176,7 +1176,7 @@ class ExperimentConfig(BaseModel):
     scenarios: ScenarioConfig
 
 class ModelConfig(BaseModel):
-    name: str = "google/gemma-2-2b-it"
+    name: str = "google/gemma-2b-it"
     device: str = "cuda"
     use_sae: bool = True
     sae_layer: int = 20  # Auto-configured

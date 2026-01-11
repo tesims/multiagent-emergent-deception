@@ -109,7 +109,7 @@ def common_options(f):
 
 def model_options(f):
     """Model configuration options."""
-    f = click.option('--model', '-m', default='google/gemma-2-9b-it',
+    f = click.option('--model', '-m', default='google/gemma-7b-it',
                      help='HuggingFace model name')(f)
     f = click.option('--device', '-d', default=None,
                      help='Device (cuda/cpu/mps, auto-detected if not specified)')(f)
@@ -132,7 +132,7 @@ def cli():
         deception run --trials 5
 
         # Full experiment with specific model
-        deception run --model google/gemma-2-9b-it --trials 40
+        deception run --model google/gemma-7b-it --trials 40
 
         # Train probes on existing data
         deception train --data activations.pt

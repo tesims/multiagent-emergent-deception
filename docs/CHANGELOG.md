@@ -51,9 +51,9 @@ Initial public release of the Multi-Agent Emergent Deception framework.
 
 | Model | VRAM | SAE Support |
 |-------|------|-------------|
-| `google/gemma-2-2b-it` | ~4GB | Yes |
-| `google/gemma-2-9b-it` | ~20GB | Yes |
-| `google/gemma-2-27b-it` | ~54GB | Yes |
+| `google/gemma-2b-it` | ~4GB | Yes |
+| `google/gemma-7b-it` | ~20GB | Yes |
+| `google/gemma-7b-it` | ~54GB | Yes |
 | `meta-llama/Llama-3.1-8B-Instruct` | ~16GB | No |
 
 ### CLI Interface

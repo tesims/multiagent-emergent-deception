@@ -750,9 +750,9 @@ class InterpretabilityConfig:
   # ┌─────────────────────┬────────────┬─────────────────────────────────────┐
   # │ Model               │ Best Layer │ SAE Release ID                      │
   # ├─────────────────────┼────────────┼─────────────────────────────────────┤
-  # │ google/gemma-2-2b   │ 12         │ gemma-scope-2b-pt-res-canonical     │
-  # │ google/gemma-2-9b   │ 21         │ gemma-scope-9b-pt-res-canonical     │
-  # │ google/gemma-2-27b  │ 31         │ gemma-scope-27b-pt-res-canonical    │
+  # │ google/gemma-2b   │ 12         │ gemma-scope-2b-pt-res-canonical     │
+  # │ google/gemma-7b   │ 21         │ gemma-scope-9b-pt-res-canonical     │
+  # │ google/gemma-7b  │ 31         │ gemma-scope-27b-pt-res-canonical    │
   # └─────────────────────┴────────────┴─────────────────────────────────────┘
   # See: https://huggingface.co/google/gemma-scope
   # Justification: Layer 21 is the middle layer for Gemma 9B (default model)

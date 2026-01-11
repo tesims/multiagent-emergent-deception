@@ -335,7 +335,7 @@ multiagent-emergent-deception/
 
 def run_experiment():
     # Phase 1: Setup
-    config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+    config = ExperimentConfig.for_model("google/gemma-7b-it")
     runner = InterpretabilityRunner(
         model_name=config.model.name,
         layers_to_capture=config.model.get_recommended_probe_layers(),
@@ -885,7 +885,7 @@ data = {
     ],
 
     "config": {
-        "model": "google/gemma-2-9b-it",
+        "model": "google/gemma-7b-it",
         "layers": [10, 21, 35],
         "n_samples": 600,
         "has_sae": True,
@@ -1182,7 +1182,7 @@ data = {
 │  USAGE:                                                                      │
 │                                                                               │
 │  # Auto-configure (recommended)                                              │
-│  config = ExperimentConfig.for_model("google/gemma-2-9b-it", num_trials=50) │
+│  config = ExperimentConfig.for_model("google/gemma-7b-it", num_trials=50) │
 │                                                                               │
 │  # Everything auto-configures based on model:                                │
 │  # - SAE release and layer                                                   │
@@ -1201,7 +1201,7 @@ data = {
 │                                                                               │
 │  MODEL_PRESETS = {                                                           │
 │                                                                               │
-│    "google/gemma-2-2b-it": {                                                │
+│    "google/gemma-2b-it": {                                                │
 │      "n_layers": 26,                                                         │
 │      "d_model": 2304,                                                        │
 │      "sae_release": "gemma-scope-2b-pt-res-canonical",                      │
@@ -1210,7 +1210,7 @@ data = {
 │      "vram_gb": 4,    # Fits on Colab free tier                             │
 │    },                                                                        │
 │                                                                               │
-│    "google/gemma-2-9b-it": {                                                │
+│    "google/gemma-7b-it": {                                                │
 │      "n_layers": 42,                                                         │
 │      "d_model": 3584,                                                        │
 │      "sae_release": "gemma-scope-9b-pt-res-canonical",                      │
@@ -1219,7 +1219,7 @@ data = {
 │      "vram_gb": 20,   # Recommended for research                            │
 │    },                                                                        │
 │                                                                               │
-│    "google/gemma-2-27b-it": {                                               │
+│    "google/gemma-7b-it": {                                               │
 │      "n_layers": 46,                                                         │
 │      "d_model": 4608,                                                        │
 │      "sae_release": "gemma-scope-27b-pt-res-canonical",                     │
@@ -1248,10 +1248,10 @@ data = {
 
 ```bash
 # Quick test (5 trials)
-deception run --model google/gemma-2-2b-it --trials 5
+deception run --model google/gemma-2b-it --trials 5
 
 # Full experiment with causal validation
-deception run --model google/gemma-2-9b-it --trials 40 --causal
+deception run --model google/gemma-7b-it --trials 40 --causal
 
 # Single scenario (for parallel execution)
 deception run --scenario-name ultimatum_bluff --trials 50
@@ -1273,7 +1273,7 @@ deception scenarios
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--model` | `google/gemma-2-9b-it` | HuggingFace model name |
+| `--model` | `google/gemma-7b-it` | HuggingFace model name |
 | `--device` | `auto` | Device (cuda/cpu/mps) |
 | `--dtype` | `bfloat16` | Model precision |
 | `--mode` | `emergent` | `emergent` or `instructed` |
@@ -1401,10 +1401,10 @@ experiment_output/
 │  Cause: TransformerLens/transformers incompatibility                         │
 │  Fix:   pip install transformers==4.44.0 accelerate==0.33.0                 │
 │                                                                               │
-│  ISSUE: "Access denied to google/gemma-2-9b-it"                             │
+│  ISSUE: "Access denied to google/gemma-7b-it"                             │
 │  ──────────────────────────────────────────────                             │
 │  Cause: HuggingFace license not accepted                                     │
-│  Fix:   Visit https://huggingface.co/google/gemma-2-9b-it and accept        │
+│  Fix:   Visit https://huggingface.co/google/gemma-7b-it and accept        │
 │         Then: huggingface-cli login                                          │
 │                                                                               │
 │  ISSUE: "Random labels R² is high"                                          │

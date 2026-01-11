@@ -15,7 +15,7 @@ The key distinction:
 - GM labels: Third-person ground truth ("You ARE being deceptive")
 
 Usage:
-    runner = InterpretabilityRunner(model_name="google/gemma-2-9b-it", device="cuda")
+    runner = InterpretabilityRunner(model_name="google/gemma-7b-it", device="cuda")
     results = runner.run_study(scenario='fishery', num_trials=10, use_gm=True)
     runner.save_dataset('negotiation_activations.pt')
 """
@@ -193,7 +193,7 @@ class TransformerLensWrapper(language_model.LanguageModel):
 
     def __init__(
         self,
-        model_name: str = "google/gemma-2-9b-it",
+        model_name: str = "google/gemma-7b-it",
         device: str = "cuda",
         layers_to_capture: List[int] = None,
         torch_dtype: torch.dtype = None,
@@ -375,7 +375,7 @@ class HybridLanguageModel(language_model.LanguageModel):
     3. SAE feature extraction adds minimal overhead
 
     Usage:
-        model = HybridLanguageModel(model_name="google/gemma-2-9b-it", use_sae=True)
+        model = HybridLanguageModel(model_name="google/gemma-7b-it", use_sae=True)
         response = model.sample_text("Hello")
         activations = model.get_activations()
         sae_features = model.get_sae_features()
@@ -383,7 +383,7 @@ class HybridLanguageModel(language_model.LanguageModel):
 
     def __init__(
         self,
-        model_name: str = "google/gemma-2-9b-it",
+        model_name: str = "google/gemma-7b-it",
         device: str = "cuda",
         layers_to_capture: List[int] = None,
         torch_dtype: torch.dtype = None,
@@ -516,6 +516,8 @@ class HybridLanguageModel(language_model.LanguageModel):
             "max_new_tokens": min(max_tokens, 256),
             "temperature": max(temperature, 0.1),
             "do_sample": True,
+            "top_p": 0.9,  # Nucleus sampling for stability
+            "top_k": 50,   # Limit vocabulary for stability
             "pad_token_id": self.tokenizer.pad_token_id,
         }
 
@@ -523,7 +525,18 @@ class HybridLanguageModel(language_model.LanguageModel):
             torch.manual_seed(seed)
 
         with torch.no_grad():
-            outputs = self.hf_model.generate(inputs.input_ids, **gen_kwargs)
+            try:
+                outputs = self.hf_model.generate(inputs.input_ids, **gen_kwargs)
+            except RuntimeError as e:
+                if "probability tensor" in str(e) or "nan" in str(e).lower():
+                    # Fallback to greedy decoding if sampling fails
+                    gen_kwargs["do_sample"] = False
+                    gen_kwargs.pop("temperature", None)
+                    gen_kwargs.pop("top_p", None)
+                    gen_kwargs.pop("top_k", None)
+                    outputs = self.hf_model.generate(inputs.input_ids, **gen_kwargs)
+                else:
+                    raise
 
         # Decode only new tokens (skip prompt)
         response = self.tokenizer.decode(
@@ -644,7 +657,7 @@ class InterpretabilityRunner:
 
     def __init__(
         self,
-        model_name: str = "google/gemma-2-9b-it",
+        model_name: str = "google/gemma-7b-it",
         device: str = "cuda",
         layers_to_capture: List[int] = None,
         torch_dtype: torch.dtype = None,
@@ -722,18 +735,18 @@ class InterpretabilityRunner:
             # Load lightweight local model for extraction (no API needed)
             try:
                 from transformers import AutoModelForCausalLM, AutoTokenizer
-                print(f"  Loading local evaluator (google/gemma-2-2b-it)...", flush=True)
+                print(f"  Loading local evaluator (google/gemma-2b-it)...", flush=True)
 
                 class LocalEvaluator:
                     """Lightweight local model for extraction tasks."""
                     def __init__(self, device="cuda"):
                         self.device = device
                         self.model = AutoModelForCausalLM.from_pretrained(
-                            "google/gemma-2-2b-it",
+                            "google/gemma-2b-it",
                             torch_dtype=torch.bfloat16,
                             device_map=device,
                         )
-                        self.tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it")
+                        self.tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b-it")
                         if self.tokenizer.pad_token is None:
                             self.tokenizer.pad_token = self.tokenizer.eos_token
 
@@ -2147,7 +2160,7 @@ Example: yes, yes'''
 # =============================================================================
 
 def run_quick_study(
-    model_name: str = "google/gemma-2-9b-it",
+    model_name: str = "google/gemma-7b-it",
     device: str = "cuda",
     scenario: str = "fishery",
     num_trials: int = 5,
@@ -2184,7 +2197,7 @@ Usage:
     from evaluation import InterpretabilityRunner
 
     runner = InterpretabilityRunner(
-        model_name="google/gemma-2-9b-it",
+        model_name="google/gemma-7b-it",
         device="cuda"
     )
 

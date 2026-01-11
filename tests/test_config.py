@@ -26,7 +26,7 @@ class TestExperimentConfig:
 
         config = ModelConfig()
 
-        assert config.name == "google/gemma-2-2b-it"
+        assert config.name == "google/gemma-2b-it"
         assert config.device in ["cuda", "cpu", "mps"]
         assert config.use_transformerlens is True
         assert config.sae_layer == 20

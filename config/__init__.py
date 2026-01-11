@@ -7,8 +7,8 @@ Quick Start - Auto-configured (Recommended):
     from config import ExperimentConfig
 
     # Everything auto-configures based on model name
-    config = ExperimentConfig.for_model("google/gemma-2-2b-it")
-    config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+    config = ExperimentConfig.for_model("google/gemma-2b-it")
+    config = ExperimentConfig.for_model("google/gemma-7b-it")
 
     # View what was configured
     config.print_config_summary()
@@ -17,14 +17,14 @@ Manual Configuration:
     from config import ExperimentConfig, ModelConfig, ProbeConfig
 
     config = ExperimentConfig(
-        model=ModelConfig(name="google/gemma-2-9b-it"),
-        probes=ProbeConfig.for_model("google/gemma-2-9b-it"),
+        model=ModelConfig(name="google/gemma-7b-it"),
+        probes=ProbeConfig.for_model("google/gemma-7b-it"),
     )
 
 Supported Models (auto-configure):
-    - google/gemma-2-2b-it (4GB VRAM)
-    - google/gemma-2-9b-it (20GB VRAM)
-    - google/gemma-2-27b-it (54GB VRAM)
+    - google/gemma-2b-it (4GB VRAM)
+    - google/gemma-7b-it (20GB VRAM)
+    - google/gemma-7b-it (54GB VRAM)
     - meta-llama/Llama-3.1-8B-Instruct (16GB VRAM, no SAE)
 
 Available Configurations:

@@ -175,7 +175,7 @@ sae_top_features = data.get("sae_top_features")  # List[List[int]]
 config = data["config"]
 
 {
-    "model": "google/gemma-2-9b-it",
+    "model": "google/gemma-7b-it",
     "layers": [0, 21, 41],
     "n_samples": 600,
     "has_sae": True,

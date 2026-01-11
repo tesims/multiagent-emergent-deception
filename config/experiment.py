@@ -13,45 +13,35 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # =============================================================================
 
 MODEL_PRESETS: Dict[str, Dict[str, Any]] = {
-    # Gemma 2B - Fast, lightweight
-    "google/gemma-2-2b-it": {
-        "n_layers": 26,
-        "d_model": 2304,
+    # Gemma 2B - Fast, lightweight (TransformerLens compatible)
+    "google/gemma-2b-it": {
+        "n_layers": 18,
+        "d_model": 2048,
         "sae_release": "gemma-scope-2b-pt-res-canonical",
-        "sae_layer": 20,  # ~77% depth (good for high-level features)
-        "sae_id": "layer_20/width_16k/canonical",
-        "layers_to_probe": [6, 13, 20, 24],  # 25%, 50%, 77%, 92%
+        "sae_layer": 12,  # ~67% depth (good for high-level features)
+        "sae_id": "layer_12/width_16k/canonical",
+        "layers_to_probe": [4, 9, 12, 16],  # 25%, 50%, 67%, 89%
         "vram_gb": 4,
     },
-    # Gemma 9B - Better quality, more VRAM
-    "google/gemma-2-9b-it": {
-        "n_layers": 42,
-        "d_model": 3584,
-        "sae_release": "gemma-scope-9b-pt-res-canonical",
-        "sae_layer": 31,  # ~74% depth
-        "sae_id": "layer_31/width_16k/canonical",
-        "layers_to_probe": [10, 21, 31, 38],  # 25%, 50%, 74%, 90%
-        "vram_gb": 20,
+    # Gemma 7B - Better quality, more VRAM (TransformerLens compatible)
+    "google/gemma-7b-it": {
+        "n_layers": 28,
+        "d_model": 3072,
+        "sae_release": "gemma-scope-7b-pt-res-canonical",
+        "sae_layer": 20,  # ~71% depth
+        "sae_id": "layer_20/width_16k/canonical",
+        "layers_to_probe": [7, 14, 20, 25],  # 25%, 50%, 71%, 89%
+        "vram_gb": 16,
     },
-    # Gemma 27B - Best quality, highest VRAM
-    "google/gemma-2-27b-it": {
-        "n_layers": 46,
-        "d_model": 4608,
-        "sae_release": "gemma-scope-27b-pt-res-canonical",
-        "sae_layer": 34,  # ~74% depth
-        "sae_id": "layer_34/width_16k/canonical",
-        "layers_to_probe": [11, 23, 34, 42],  # 25%, 50%, 74%, 91%
-        "vram_gb": 54,
-    },
-    # Llama 3.1 8B - Alternative architecture
-    "meta-llama/Llama-3.1-8B-Instruct": {
+    # Llama 2 7B - Alternative architecture (TransformerLens compatible)
+    "meta-llama/Llama-2-7b-chat-hf": {
         "n_layers": 32,
         "d_model": 4096,
         "sae_release": None,  # No SAE available
         "sae_layer": 24,
         "sae_id": None,
         "layers_to_probe": [8, 16, 24, 30],  # 25%, 50%, 75%, 94%
-        "vram_gb": 16,
+        "vram_gb": 14,
     },
 }
 
@@ -66,22 +56,21 @@ class ModelConfig(BaseModel):
 
     Auto-configuration: When `auto_configure=True` (default), SAE settings
     and probe layers are automatically set based on the model name.
-    Supported models: gemma-2-2b-it, gemma-2-9b-it, gemma-2-27b-it, Llama-3.1-8B.
+    Supported models: gemma-2b-it, gemma-7b-it, gemma-7b-it, Llama-2-7b.
 
     Example:
         # Just set the model name - everything else auto-configures
-        config = ModelConfig(name="google/gemma-2-9b-it")
+        config = ModelConfig(name="google/gemma-7b-it")
         # sae_release, sae_layer, sae_id all set automatically
     """
 
     # Model selection
     name: str = Field(
-        default="google/gemma-2-2b-it",
-        description="""HuggingFace model name. Tested models:
-        - google/gemma-2-2b-it (fast, ~4GB VRAM)
-        - google/gemma-2-9b-it (better, ~20GB VRAM)
-        - google/gemma-2-27b-it (best, ~54GB VRAM)
-        - meta-llama/Llama-3.1-8B-Instruct (~16GB VRAM)
+        default="google/gemma-2b-it",
+        description="""HuggingFace model name (must be TransformerLens compatible). Tested models:
+        - google/gemma-2b-it (fast, ~4GB VRAM)
+        - google/gemma-7b-it (better, ~16GB VRAM)
+        - meta-llama/Llama-2-7b-chat-hf (~14GB VRAM)
         """
     )
 
@@ -189,8 +178,8 @@ class EvaluatorConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable separate evaluator model")
     model: str = Field(
-        default="google/gemma-2-2b-it",
-        description="Lightweight model for evaluation (~2GB VRAM)"
+        default="google/gemma-2b-it",
+        description="Lightweight model for evaluation (~4GB VRAM)"
     )
     max_tokens: int = Field(
         default=64,
@@ -249,7 +238,7 @@ class ProbeConfig(BaseModel):
         """Create ProbeConfig with layers optimized for a specific model.
 
         Example:
-            probes = ProbeConfig.for_model("google/gemma-2-9b-it")
+            probes = ProbeConfig.for_model("google/gemma-7b-it")
             # layers_to_probe = [10, 21, 31, 38] (auto-set for 9B)
         """
         preset = get_model_preset(model_name)
@@ -496,12 +485,12 @@ class ExperimentConfig(BaseModel):
 
         Example:
             # Switch between models with one line:
-            config = ExperimentConfig.for_model("google/gemma-2-2b-it")
-            config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+            config = ExperimentConfig.for_model("google/gemma-2b-it")
+            config = ExperimentConfig.for_model("google/gemma-7b-it")
 
             # With custom settings:
             config = ExperimentConfig.for_model(
-                "google/gemma-2-9b-it",
+                "google/gemma-7b-it",
                 num_trials=100,
                 scenarios=["ultimatum_bluff", "alliance_betrayal"],
             )
@@ -551,19 +540,19 @@ class ExperimentConfig(BaseModel):
 
 # Default configurations for common use cases
 QUICK_TEST = ExperimentConfig(
-    model=ModelConfig(name="google/gemma-2-2b-it"),
+    model=ModelConfig(name="google/gemma-2b-it"),
     scenarios=ScenarioConfig(scenarios=["alliance_betrayal"], num_trials=1),
     causal=CausalConfig(num_samples=10),
 )
 
 FULL_EXPERIMENT = ExperimentConfig(
-    model=ModelConfig(name="google/gemma-2-9b-it"),
+    model=ModelConfig(name="google/gemma-7b-it"),
     scenarios=ScenarioConfig(num_trials=50),
     causal=CausalConfig(num_samples=30),
 )
 
 FAST_ITERATION = ExperimentConfig(
-    model=ModelConfig(name="google/gemma-2-2b-it", use_sae=False),
+    model=ModelConfig(name="google/gemma-2b-it", use_sae=False),
     scenarios=ScenarioConfig(scenarios=["ultimatum_bluff"], num_trials=5),
     causal=CausalConfig(enabled=False),
 )

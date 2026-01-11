@@ -107,7 +107,7 @@ def verify_installation() -> Dict[str, bool]:
     return results
 
 
-def verify_gemma_loading(model_name: str = "google/gemma-2-9b-it", device: str = "cpu"):
+def verify_gemma_loading(model_name: str = "google/gemma-7b-it", device: str = "cpu"):
     """Verify TransformerLens can load Gemma 2 correctly."""
     print(f"\nVerifying Gemma loading: {model_name}")
 
@@ -199,7 +199,7 @@ class ActivationCache:
 
 
 def load_gemma_with_cache(
-    model_name: str = "google/gemma-2-9b-it",
+    model_name: str = "google/gemma-7b-it",
     device: str = "cuda",
 ):
     """Load Gemma model configured for activation caching."""
@@ -736,7 +736,7 @@ def visualize_probe_results(
 # =============================================================================
 
 def run_full_analysis(
-    model_name: str = "google/gemma-2-9b-it",
+    model_name: str = "google/gemma-7b-it",
     text: str = "I promise to cooperate with you on this deal.",
     layers_to_analyze: List[int] = [0, 21, 41],
     device: str = "cuda",
@@ -812,7 +812,7 @@ if __name__ == "__main__":
     if all_required:
         print("\n✓ All required tools installed!")
         print("\nTo verify Gemma loading (requires download):")
-        print("  verify_gemma_loading('google/gemma-2-9b-it', device='cpu')")
+        print("  verify_gemma_loading('google/gemma-7b-it', device='cpu')")
         print("\nTo verify SAE loading (requires download):")
         print("  verify_sae_loading()")
     else:
