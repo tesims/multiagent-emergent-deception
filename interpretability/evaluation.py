@@ -510,7 +510,14 @@ class HybridLanguageModel(language_model.LanguageModel):
         else:
             formatted_prompt = prompt
 
-        inputs = self.tokenizer(formatted_prompt, return_tensors="pt").to(self.device)
+        # Truncate to model's max position - leave room for generation
+        max_input_length = min(getattr(self.hf_model.config, 'max_position_embeddings', 8192) - 256, 4096)
+        inputs = self.tokenizer(
+            formatted_prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_input_length,
+        ).to(self.device)
 
         gen_kwargs = {
             "max_new_tokens": min(max_tokens, 256),
@@ -557,7 +564,11 @@ class HybridLanguageModel(language_model.LanguageModel):
         # OPTIMIZATION: Skip this expensive step when not needed
         if capture_activations:
             full_text = prompt + response
-            tokens = self.tl_model.to_tokens(full_text)
+            tokens = self.tl_model.to_tokens(full_text, truncate=True)
+            # Ensure we don't exceed max position embeddings
+            max_pos = getattr(self.tl_model.cfg, 'n_ctx', 8192)
+            if tokens.shape[1] > max_pos:
+                tokens = tokens[:, -max_pos:]  # Keep last tokens
 
             with torch.no_grad():
                 _, cache = self.tl_model.run_with_cache(
@@ -756,13 +767,19 @@ class InterpretabilityRunner:
                         formatted = self.tokenizer.apply_chat_template(
                             messages, tokenize=False, add_generation_prompt=True
                         )
-                        inputs = self.tokenizer(formatted, return_tensors="pt").to(self.device)
+                        # Truncate to avoid exceeding max position embeddings
+                        max_len = min(getattr(self.model.config, 'max_position_embeddings', 8192) - 256, 4096)
+                        inputs = self.tokenizer(
+                            formatted, return_tensors="pt", truncation=True, max_length=max_len
+                        ).to(self.device)
                         with torch.no_grad():
                             outputs = self.model.generate(
                                 inputs.input_ids,
                                 max_new_tokens=max_tokens,
                                 temperature=0.3,
                                 do_sample=True,
+                                top_p=0.9,
+                                top_k=50,
                                 pad_token_id=self.tokenizer.pad_token_id,
                             )
                         return self.tokenizer.decode(
