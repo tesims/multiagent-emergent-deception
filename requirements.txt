@@ -9,7 +9,6 @@ scipy>=1.10.0,<2.0.0
 pytest
 
 # HuggingFace
-accelerate=0.33.0
 huggingface-hub>=0.20.0,<1.0.0
 sentence-transformers>=2.2.0,<3.0.0
 
