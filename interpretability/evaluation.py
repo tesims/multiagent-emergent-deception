@@ -1268,8 +1268,14 @@ Example: yes, yes'''
         trial_samples = []
         deception_count = 0
 
-        # Create scenario
-        scenario = create_scenario(scenario_type)
+        # Create scenario - use fallback for deception scenarios
+        try:
+            scenario = create_scenario(scenario_type)
+        except ValueError:
+            # Deception scenarios (ultimatum_bluff, etc.) aren't in contest_scenarios
+            # Use 'bluff' as a compatible base scenario for instructed experiments
+            logger.debug(f"Scenario '{scenario_type}' not in contest_scenarios, using 'bluff' as base")
+            scenario = create_scenario('bluff')
         scenario.initialize()
 
         # Create two agents
