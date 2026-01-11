@@ -1,8 +1,9 @@
 """Theory of mind component for emotional intelligence and recursive reasoning."""
 
 import dataclasses
+import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from collections import deque
 
@@ -12,6 +13,16 @@ from config.agents.negotiation import (
     DeceptionDetectionConfig,
     TheoryOfMindConfig,
 )
+
+# Set up module logger
+logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from transformer_lens import HookedTransformer
+
+# Type alias for language models used in this module
+# Expected to be HookedTransformer or compatible model with generate/sample methods
+LanguageModel = Any
 
 
 @dataclasses.dataclass
@@ -63,7 +74,7 @@ class TheoryOfMind(entity_component.ContextComponent):
 
     def __init__(
         self,
-        model: Any,
+        model: LanguageModel,
         max_recursion_depth: int = 3,
         emotion_sensitivity: float = 0.7,
         empathy_level: float = 0.8,
@@ -71,7 +82,7 @@ class TheoryOfMind(entity_component.ContextComponent):
         """Initialize theory of mind component.
 
         Args:
-            model: Language model for analysis
+            model: Language model for analysis (HookedTransformer or compatible)
             max_recursion_depth: Maximum levels of recursive reasoning
             emotion_sensitivity: Sensitivity to emotional cues (0-1)
             empathy_level: Level of empathic responding (0-1)
@@ -143,29 +154,29 @@ Format: anger:X.X fear:X.X joy:X.X sadness:X.X surprise:X.X trust:X.X anticipati
                     try:
                         value = float(line.split(':')[1].strip())
                         emotions[emotion] = max(0.0, min(1.0, value))
-                    except (ValueError, IndexError):
-                        pass
+                    except (ValueError, IndexError) as e:
+                        logger.debug("Failed to parse emotion '%s' from line: %s", emotion, line)
 
             if "valence:" in line:
                 try:
                     valence = float(line.split(':')[1].strip())
                     valence = max(-1.0, min(1.0, valence))
-                except (ValueError, IndexError):
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug("Failed to parse valence from line: %s", line)
 
             if "arousal:" in line:
                 try:
                     arousal = float(line.split(':')[1].strip())
                     arousal = max(0.0, min(1.0, arousal))
-                except (ValueError, IndexError):
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug("Failed to parse arousal from line: %s", line)
 
             if "confidence:" in line:
                 try:
                     confidence = float(line.split(':')[1].strip())
                     confidence = max(0.0, min(1.0, confidence))
-                except (ValueError, IndexError):
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug("Failed to parse confidence from line: %s", line)
 
         # Identify emotional triggers
         triggers = self._identify_emotional_triggers(communication, emotions)
@@ -236,8 +247,8 @@ Format: financial:X.X costs:X.X relationship:X.X precedent:X.X information:X.X t
                     try:
                         value = float(line.split(':')[1].strip())
                         goals[goal] = max(0.0, min(1.0, value))
-                    except (ValueError, IndexError):
-                        pass
+                    except (ValueError, IndexError) as e:
+                        logger.debug("Failed to parse goal '%s' from line: %s", goal, line)
 
         return goals
 
@@ -278,8 +289,8 @@ Format: openness:X.X conscientiousness:X.X extraversion:X.X agreeableness:X.X ne
                     try:
                         value = float(line.split(':')[1].strip())
                         traits[trait] = max(0.0, min(1.0, value))
-                    except (ValueError, IndexError):
-                        pass
+                    except (ValueError, IndexError) as e:
+                        logger.debug("Failed to parse trait '%s' from line: %s", trait, line)
 
         return traits
 

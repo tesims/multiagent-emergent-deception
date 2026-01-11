@@ -3,15 +3,29 @@
 This module provides all configuration classes for running deception detection
 experiments on LLM agents. Configure experiments by modifying these settings.
 
-Quick Start:
+Quick Start - Auto-configured (Recommended):
+    from config import ExperimentConfig
+
+    # Everything auto-configures based on model name
+    config = ExperimentConfig.for_model("google/gemma-2-2b-it")
+    config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+
+    # View what was configured
+    config.print_config_summary()
+
+Manual Configuration:
     from config import ExperimentConfig, ModelConfig, ProbeConfig
 
-    # Configure your experiment
-    experiment = ExperimentConfig(
-        model=ModelConfig(name="google/gemma-2-2b-it", device="cuda"),
-        scenarios=["ultimatum_bluff", "alliance_betrayal"],
-        num_trials=50,
+    config = ExperimentConfig(
+        model=ModelConfig(name="google/gemma-2-9b-it"),
+        probes=ProbeConfig.for_model("google/gemma-2-9b-it"),
     )
+
+Supported Models (auto-configure):
+    - google/gemma-2-2b-it (4GB VRAM)
+    - google/gemma-2-9b-it (20GB VRAM)
+    - google/gemma-2-27b-it (54GB VRAM)
+    - meta-llama/Llama-3.1-8B-Instruct (16GB VRAM, no SAE)
 
 Available Configurations:
     - ExperimentConfig: Main experiment settings
@@ -19,8 +33,10 @@ Available Configurations:
     - ProbeConfig: Linear probe training settings
     - CausalConfig: Activation patching/ablation settings
     - ScenarioConfig: Deception scenario settings
-    - AgentConfig: Agent behavior settings (negotiation, future types)
+    - MODEL_PRESETS: Dict of model-specific settings
 """
+
+__version__ = "1.0.0"
 
 from config.experiment import (
     ExperimentConfig,
@@ -29,6 +45,13 @@ from config.experiment import (
     ProbeConfig,
     CausalConfig,
     ScenarioConfig,
+    # Model presets for auto-configuration
+    MODEL_PRESETS,
+    get_model_preset,
+    # Preset configs
+    QUICK_TEST,
+    FULL_EXPERIMENT,
+    FAST_ITERATION,
 )
 
 from config.agents.negotiation import (
@@ -39,6 +62,8 @@ from config.agents.negotiation import (
 )
 
 __all__ = [
+    # Version
+    "__version__",
     # Core experiment configs
     "ExperimentConfig",
     "ModelConfig",
@@ -46,6 +71,13 @@ __all__ = [
     "ProbeConfig",
     "CausalConfig",
     "ScenarioConfig",
+    # Model presets
+    "MODEL_PRESETS",
+    "get_model_preset",
+    # Preset configs
+    "QUICK_TEST",
+    "FULL_EXPERIMENT",
+    "FAST_ITERATION",
     # Agent configs
     "StrategyConfig",
     "ModuleDefaults",

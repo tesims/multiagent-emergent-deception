@@ -14,39 +14,107 @@ This framework enables researchers to:
 
 ## Quick Start
 
+### Installation
+
 ```bash
-# Install
 git clone https://github.com/tesims/multiagent-emergent-deception.git
 cd multiagent-emergent-deception
 pip install -e .
-
-# Run experiment
-python -m interpretability.run_deception_experiment --mode emergent --trials 10
 ```
 
-## Configuration-Driven Design
+### Run Experiment (CLI)
+
+```bash
+# Quick test
+deception run --model google/gemma-2-2b-it --trials 5
+
+# Full experiment with causal validation
+deception run --model google/gemma-2-9b-it --trials 40 --causal
+
+# List available scenarios
+deception scenarios
+```
+
+### Run Experiment (Python)
+
+```python
+from config import ExperimentConfig
+from interpretability import InterpretabilityRunner
+
+# Auto-configure everything based on model
+config = ExperimentConfig.for_model("google/gemma-2-2b-it", num_trials=10)
+config.print_config_summary()
+
+# Run experiment
+runner = InterpretabilityRunner(
+    model_name=config.model.name,
+    device="cuda",
+)
+
+results = runner.run_all_emergent_scenarios(
+    scenarios=config.scenarios.scenarios,
+    trials_per_scenario=config.scenarios.num_trials,
+)
+
+# Save and analyze
+runner.save_dataset("activations.pt")
+```
+
+### Google Colab
+
+```python
+# Install from GitHub
+!pip install git+https://github.com/tesims/multiagent-emergent-deception.git
+
+# Run experiment (2B model fits in free tier)
+from config import ExperimentConfig
+config = ExperimentConfig.for_model("google/gemma-2-2b-it", num_trials=5)
+```
+
+## Supported Models
+
+Models auto-configure SAE settings and probe layers:
+
+| Model | VRAM | SAE | Use Case |
+|-------|------|-----|----------|
+| `google/gemma-2-2b-it` | ~4GB | Yes | Fast iteration, Colab free |
+| `google/gemma-2-9b-it` | ~20GB | Yes | Research quality |
+| `google/gemma-2-27b-it` | ~54GB | Yes | Best performance |
+| `meta-llama/Llama-3.1-8B-Instruct` | ~16GB | No | Alternative architecture |
+
+```python
+# Just change the model - everything else auto-configures
+config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+```
+
+## Configuration
 
 All experiments are configured through `config/`:
 
 ```python
-from config import ExperimentConfig, ModelConfig, ScenarioConfig
+from config import ExperimentConfig, MODEL_PRESETS
 
-# Customize your experiment
-experiment = ExperimentConfig(
-    model=ModelConfig(
-        name="google/gemma-2-2b-it",
-        device="cuda",
-        use_sae=True,
-    ),
+# Option 1: Auto-configure (recommended)
+config = ExperimentConfig.for_model("google/gemma-2-9b-it", num_trials=50)
+
+# Option 2: Manual configuration
+from config import ModelConfig, ScenarioConfig, ProbeConfig
+
+config = ExperimentConfig(
+    model=ModelConfig(name="google/gemma-2-9b-it"),
+    probes=ProbeConfig.for_model("google/gemma-2-9b-it"),
     scenarios=ScenarioConfig(
-        mode="emergent",
         scenarios=["ultimatum_bluff", "alliance_betrayal"],
         num_trials=50,
     ),
 )
+
+# Option 3: Use presets
+from config import QUICK_TEST, FULL_EXPERIMENT, FAST_ITERATION
+config = QUICK_TEST  # 1 scenario, 1 trial
 ```
 
-### Available Configs
+### Config Reference
 
 | Config | Purpose |
 |--------|---------|
@@ -55,45 +123,8 @@ experiment = ExperimentConfig(
 | `ProbeConfig` | Linear probe training |
 | `CausalConfig` | Activation patching, ablation, steering |
 | `ScenarioConfig` | Deception scenarios and trials |
-| `StrategyConfig` | Agent behavior (negotiation) |
-
-### Preset Configurations
-
-```python
-from config.experiment import QUICK_TEST, FULL_EXPERIMENT, FAST_ITERATION
-
-# Quick validation (1 scenario, 1 trial)
-experiment = QUICK_TEST
-
-# Full research run (6 scenarios, 50 trials)
-experiment = FULL_EXPERIMENT
-
-# Fast iteration (no SAE, minimal causal)
-experiment = FAST_ITERATION
-```
-
-## Project Structure
-
-```
-multiagent-emergent-deception/
-├── config/                    # CENTRAL CONFIGURATION
-│   ├── experiment.py          # Core experiment configs
-│   └── agents/
-│       └── negotiation.py     # Negotiation agent configs
-│
-├── interpretability/          # DECEPTION DETECTION PIPELINE
-│   ├── run_deception_experiment.py  # Main entry point
-│   ├── evaluation.py          # HybridLanguageModel, runner
-│   ├── scenarios/             # Deception scenarios
-│   ├── probes/                # Probe training & SAE tools
-│   └── causal/                # Causal validation
-│
-├── negotiation/               # AGENT IMPLEMENTATION (extensible)
-│   ├── components/            # 6 cognitive modules
-│   └── game_master/           # GM components
-│
-└── concordia_mini/            # Framework dependency
-```
+| `StrategyConfig` | Agent negotiation behavior |
+| `DeceptionDetectionConfig` | Linguistic deception cues |
 
 ## Deception Scenarios
 
@@ -112,25 +143,48 @@ No explicit deception instructions - agents deceive because it's strategically a
 ### Instructed (Apollo-Style)
 Explicit instructions to deceive - for baseline comparisons.
 
-### Contest (Game-Theoretic)
-Complex multi-agent scenarios: Fishery, Treaty, Gameshow.
+## Project Structure
 
-## Extending for New Agent Types
-
-The framework supports agents beyond negotiation:
-
-```python
-# 1. Create config/agents/your_agent.py
-@dataclass
-class YourAgentConfig:
-    behavior_param: float = 0.5
-    ...
-
-# 2. Create agents/your_agent/
-#    with components matching your research needs
-
-# 3. Add scenarios in interpretability/scenarios/
 ```
+multiagent-emergent-deception/
+├── config/                    # CONFIGURATION
+│   ├── experiment.py          # ExperimentConfig, ModelConfig, etc.
+│   └── agents/
+│       └── negotiation.py     # Agent behavior constants
+│
+├── interpretability/          # DECEPTION DETECTION
+│   ├── cli.py                 # Click CLI (deception command)
+│   ├── evaluation.py          # InterpretabilityRunner
+│   ├── core/                  # DatasetBuilder, GroundTruthDetector
+│   ├── scenarios/             # Deception scenarios
+│   ├── probes/                # Probe training & analysis
+│   └── causal/                # Causal validation
+│
+├── negotiation/               # AGENT IMPLEMENTATION
+│   ├── components/            # Cognitive modules
+│   └── game_master/           # GM components
+│
+├── concordia_mini/            # Framework dependency (Apache-2.0)
+├── docs/                      # Documentation
+│   ├── SETUP.md               # Detailed setup guide
+│   ├── METHODOLOGY.md         # Technical methodology
+│   ├── OUTPUT_GUIDE.md        # Output interpretation guide
+│   ├── ARCHITECTURE.md        # System architecture diagrams
+│   ├── RUNPOD_GUIDE.md        # Cloud GPU deployment
+│   └── CONTRIBUTING.md        # Contribution guidelines
+└── tests/                     # Test suite
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[docs/SETUP.md](docs/SETUP.md)** | Installation, configuration, Colab usage |
+| **[docs/METHODOLOGY.md](docs/METHODOLOGY.md)** | Complete technical methodology |
+| **[docs/OUTPUT_GUIDE.md](docs/OUTPUT_GUIDE.md)** | How to interpret experiment outputs |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System architecture with diagrams |
+| **[docs/RUNPOD_GUIDE.md](docs/RUNPOD_GUIDE.md)** | Cloud GPU deployment (RunPod) |
+| **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** | Contribution guidelines |
 
 ## Citation
 

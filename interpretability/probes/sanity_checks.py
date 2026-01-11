@@ -24,10 +24,17 @@ def sanity_check_random_labels(
     X: np.ndarray,
     y: np.ndarray,
     n_shuffles: int = 5,
+    random_state: int = 42,
 ) -> Dict[str, Any]:
     """
     Check 1: Probes on shuffled labels should give R² ≈ 0.
     If they don't, probes are memorizing, not learning.
+
+    Args:
+        X: Feature matrix [N, d_model]
+        y: Labels [N]
+        n_shuffles: Number of label shuffles to test
+        random_state: Base random seed for reproducibility
     """
     shuffle_r2s = []
 
@@ -36,7 +43,7 @@ def sanity_check_random_labels(
         y_shuffled = np.random.permutation(y)
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y_shuffled, test_size=0.2, random_state=42
+            X, y_shuffled, test_size=0.2, random_state=random_state
         )
 
         probe = Ridge(alpha=1.0)
@@ -57,12 +64,18 @@ def sanity_check_random_labels(
 def sanity_check_train_test_gap(
     X: np.ndarray,
     y: np.ndarray,
+    random_state: int = 42,
 ) -> Dict[str, Any]:
     """
     Check 2: Large train-test gap indicates overfitting.
+
+    Args:
+        X: Feature matrix [N, d_model]
+        y: Labels [N]
+        random_state: Random seed for train/test split
     """
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=random_state
     )
 
     probe = Ridge(alpha=1.0)
@@ -100,10 +113,16 @@ def sanity_check_label_variance(y: np.ndarray) -> Dict[str, Any]:
 def sanity_check_layer_0_baseline(
     activations: Dict[int, np.ndarray],
     y: np.ndarray,
+    random_state: int = 42,
 ) -> Dict[str, Any]:
     """
     Check 4: Layer 0 should have lower R² than mid-layers.
     If layer 0 is best, the probe may be picking up input features, not learned representations.
+
+    Args:
+        activations: Dict mapping layer -> activation array [N, d_model]
+        y: Labels [N]
+        random_state: Random seed for train/test split
     """
     layers = sorted(activations.keys())
 
@@ -120,7 +139,7 @@ def sanity_check_layer_0_baseline(
             X = X.numpy()
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
+            X, y, test_size=0.2, random_state=random_state
         )
 
         probe = Ridge(alpha=1.0)
@@ -147,6 +166,7 @@ def run_all_sanity_checks(
     activations: Dict[int, np.ndarray],
     gm_labels: np.ndarray,
     verbose: bool = True,
+    random_state: int = 42,
 ) -> Dict[str, Any]:
     """
     Run all 4 sanity checks.
@@ -155,6 +175,7 @@ def run_all_sanity_checks(
         activations: Dict mapping layer -> activation array [N, d_model]
         gm_labels: Ground truth deception labels [N]
         verbose: Print results
+        random_state: Random seed for reproducibility (passed to all checks)
 
     Returns:
         Dict with all check results and "all_passed" boolean
@@ -177,14 +198,14 @@ def run_all_sanity_checks(
         print("=" * 60)
 
     # Check 1: Random labels
-    results["random_labels"] = sanity_check_random_labels(X_mid, gm_labels)
+    results["random_labels"] = sanity_check_random_labels(X_mid, gm_labels, random_state=random_state)
     if verbose:
         status = "PASSED" if results["random_labels"]["passed"] else "FAILED"
         print(f"\n1. Random Labels: {status}")
         print(f"   {results['random_labels']['message']}")
 
     # Check 2: Train-test gap
-    results["train_test_gap"] = sanity_check_train_test_gap(X_mid, gm_labels)
+    results["train_test_gap"] = sanity_check_train_test_gap(X_mid, gm_labels, random_state=random_state)
     if verbose:
         status = "PASSED" if results["train_test_gap"]["passed"] else "FAILED"
         print(f"\n2. Train-Test Gap: {status}")
@@ -198,7 +219,7 @@ def run_all_sanity_checks(
         print(f"   {results['label_variance']['message']}")
 
     # Check 4: Layer 0 baseline
-    results["layer_0_baseline"] = sanity_check_layer_0_baseline(activations, gm_labels)
+    results["layer_0_baseline"] = sanity_check_layer_0_baseline(activations, gm_labels, random_state=random_state)
     if verbose:
         status = "PASSED" if results["layer_0_baseline"]["passed"] else "FAILED"
         print(f"\n4. Layer 0 Baseline: {status}")

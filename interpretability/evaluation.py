@@ -22,6 +22,7 @@ Usage:
 
 import os
 import json
+import logging
 import torch
 import numpy as np
 import hashlib
@@ -29,6 +30,9 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict
+
+# Set up module logger
+logger = logging.getLogger(__name__)
 
 from concordia_mini.language_model import language_model
 from concordia_mini.associative_memory import basic_associative_memory
@@ -250,11 +254,18 @@ class TransformerLensWrapper(language_model.LanguageModel):
                 names_filter=lambda name: name in self.hook_names
             )
 
-        # Extract last-token activations from each layer
+        # Extract LAST TOKEN activations from each layer
+        # =====================================================
+        # WHY LAST TOKEN:
+        # - For autoregressive models, the last token position contains
+        #   the most decision-relevant information (what the model is about to output)
+        # - This follows standard practice in mech interp (Marks et al. 2023, Apollo Research)
+        # - Alternative: mean pooling across all positions, but last token is more focused
+        # =====================================================
         self._current_activations = {}
         for hook_name in self.hook_names:
             if hook_name in cache:
-                # Shape: [batch, seq, d_model] -> [d_model] (last token)
+                # Shape: [batch, seq, d_model] -> [d_model] (last token only)
                 self._current_activations[hook_name] = cache[hook_name][0, -1, :].cpu()
 
         # Generate response
@@ -448,9 +459,9 @@ class HybridLanguageModel(language_model.LanguageModel):
                     layer=sae_layer,
                     width="16k",
                 )
-                print(f"  SAE loaded: {self.sae_cfg['d_sae']} features", flush=True)
+                logger.info("SAE loaded: %d features", self.sae_cfg['d_sae'])
             except Exception as e:
-                print(f"  Warning: SAE loading failed: {e}", flush=True)
+                logger.warning("SAE loading failed: %s", e)
                 self.use_sae = False
 
         # State
@@ -458,9 +469,9 @@ class HybridLanguageModel(language_model.LanguageModel):
         self._current_sae_features = None
         self._call_count = 0
 
-        print(f"  HybridLanguageModel ready!", flush=True)
-        print(f"  Layers to capture: {self.layers_to_capture}", flush=True)
-        print(f"  SAE enabled: {self.use_sae}", flush=True)
+        logger.info("HybridLanguageModel ready!")
+        logger.info("Layers to capture: %s", self.layers_to_capture)
+        logger.info("SAE enabled: %s", self.use_sae)
 
     def sample_text(
         self,
@@ -561,7 +572,7 @@ class HybridLanguageModel(language_model.LanguageModel):
                             self._current_activations[sae_hook],
                         )
                 except Exception as e:
-                    pass  # Silently continue if SAE extraction fails
+                    logger.debug("SAE feature extraction failed: %s", e)
 
         return response
 
@@ -749,10 +760,10 @@ class InterpretabilityRunner:
                         ).strip()
 
                 evaluator = LocalEvaluator(device=self._device)
-                print(f"  Local evaluator ready!", flush=True)
+                logger.info("Local evaluator ready!")
                 return evaluator
             except Exception as e:
-                print(f"  Warning: Local evaluator setup failed: {e}", flush=True)
+                logger.warning("Local evaluator setup failed: %s", e)
                 return None
 
         elif api == 'together':
@@ -761,15 +772,15 @@ class InterpretabilityRunner:
                 import os
                 api_key = os.environ.get('TOGETHER_API_KEY')
                 if not api_key:
-                    print("  Warning: TOGETHER_API_KEY not set, falling back to local extraction")
+                    logger.warning("TOGETHER_API_KEY not set, falling back to local extraction")
                     return None
-                print(f"  Setting up Together AI evaluator (gemma-3-4b-it)...")
+                logger.info("Setting up Together AI evaluator (gemma-3-4b-it)...")
                 return together_ai.TogetherAI(
                     model_name='google/gemma-3-4b-it',  # Fast, cheap, good at extraction
                     api_key=api_key,
                 )
             except Exception as e:
-                print(f"  Warning: Together AI setup failed: {e}")
+                logger.warning("Together AI setup failed: %s", e)
                 return None
         elif api == 'google':
             try:
@@ -777,18 +788,18 @@ class InterpretabilityRunner:
                 import os
                 api_key = os.environ.get('GOOGLE_API_KEY')
                 if not api_key:
-                    print("  Warning: GOOGLE_API_KEY not set, falling back to local extraction")
+                    logger.warning("GOOGLE_API_KEY not set, falling back to local extraction")
                     return None
-                print(f"  Setting up Google AI Studio evaluator (gemini-1.5-flash)...")
+                logger.info("Setting up Google AI Studio evaluator (gemini-1.5-flash)...")
                 return google_aistudio_model.GoogleAIStudioModel(
                     model_name='gemini-1.5-flash',  # Free tier, fast
                     api_key=api_key,
                 )
             except Exception as e:
-                print(f"  Warning: Google AI Studio setup failed: {e}")
+                logger.warning("Google AI Studio setup failed: %s", e)
                 return None
         else:
-            print(f"  Warning: Unknown evaluator API '{api}', falling back to local")
+            logger.warning("Unknown evaluator API '%s', falling back to local", api)
             return None
 
     def _create_memory_bank(self):
@@ -1194,7 +1205,7 @@ Example: yes, yes'''
             return gm
 
         except Exception as e:
-            print(f"  Warning: Could not create GM with modules: {e}")
+            logger.warning("Could not create GM with modules: %s", e)
             return None
 
     def run_single_negotiation(
@@ -2089,37 +2100,37 @@ Example: yes, yes'''
                     dataset['sae_top_features'] = all_sae_top_features
                     dataset['config']['sae_dim'] = sae_dim
                 except Exception as e:
-                    print(f"  Warning: Could not save SAE features: {e}")
+                    logger.warning("Could not save SAE features: %s", e)
 
             torch.save(dataset, filepath)
 
-            # Print summary
+            # Log summary
             n_samples = len(all_gm_deception)
             layers = sorted(stacked_activations.keys())
             d_model = stacked_activations[layers[0]].shape[1] if layers else 0
 
-            print(f"\nSaved {n_samples} samples to {filepath}")
-            print(f"  Layers: {layers}")
-            print(f"  Activation dim: {d_model}")
-            print(f"  GM deception rate: {np.mean(all_gm_deception):.1%}")
+            logger.info("Saved %d samples to %s", n_samples, filepath)
+            logger.info("Layers: %s", layers)
+            logger.info("Activation dim: %d", d_model)
+            logger.info("GM deception rate: %.1f%%", np.mean(all_gm_deception) * 100)
 
             # SAE summary
             if all_sae_features:
-                print(f"  SAE features: {len(all_sae_features)} samples, dim={dataset['config'].get('sae_dim', 'N/A')}")
+                logger.info("SAE features: %d samples, dim=%s", len(all_sae_features), dataset['config'].get('sae_dim', 'N/A'))
             else:
-                print(f"  SAE features: None (not captured or SAE disabled)")
+                logger.info("SAE features: None (not captured or SAE disabled)")
 
-            # Print per-scenario breakdown
+            # Log per-scenario breakdown
             unique_scenarios = set(all_scenarios)
             if len(unique_scenarios) > 1:
-                print(f"\nPer-scenario deception rates:")
+                logger.info("Per-scenario deception rates:")
                 for scenario in sorted(unique_scenarios):
                     mask = [s == scenario for s in all_scenarios]
                     rate = np.mean([all_gm_deception[i] for i, m in enumerate(mask) if m])
                     count = sum(mask)
-                    print(f"  {scenario}: {rate:.1%} ({count} samples)")
+                    logger.info("  %s: %.1f%% (%d samples)", scenario, rate * 100, count)
         else:
-            print("No samples to save!")
+            logger.warning("No samples to save!")
 
     def print_summary(self, results: EvaluationResult):
         """Print summary of results."""

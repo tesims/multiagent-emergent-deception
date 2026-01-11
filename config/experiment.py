@@ -1,52 +1,183 @@
 """Core experiment configuration for mechanistic interpretability research.
 
 This is the central configuration hub for all deception detection experiments.
-Modify these dataclasses to customize your experiments.
+Uses Pydantic for validation and serialization.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-@dataclass
-class ModelConfig:
-    """LLM and interpretability model configuration."""
+# =============================================================================
+# MODEL PRESETS - Auto-configuration for supported models
+# =============================================================================
 
-    # Model selection
-    name: str = "google/gemma-2-2b-it"
-    """HuggingFace model name. Tested models:
-    - google/gemma-2-2b-it (fast, ~4GB VRAM)
-    - google/gemma-2-9b-it (better, ~20GB VRAM)
-    - meta-llama/Llama-3.1-8B-Instruct
+MODEL_PRESETS: Dict[str, Dict[str, Any]] = {
+    # Gemma 2B - Fast, lightweight
+    "google/gemma-2-2b-it": {
+        "n_layers": 26,
+        "d_model": 2304,
+        "sae_release": "gemma-scope-2b-pt-res-canonical",
+        "sae_layer": 20,  # ~77% depth (good for high-level features)
+        "sae_id": "layer_20/width_16k/canonical",
+        "layers_to_probe": [6, 13, 20, 24],  # 25%, 50%, 77%, 92%
+        "vram_gb": 4,
+    },
+    # Gemma 9B - Better quality, more VRAM
+    "google/gemma-2-9b-it": {
+        "n_layers": 42,
+        "d_model": 3584,
+        "sae_release": "gemma-scope-9b-pt-res-canonical",
+        "sae_layer": 31,  # ~74% depth
+        "sae_id": "layer_31/width_16k/canonical",
+        "layers_to_probe": [10, 21, 31, 38],  # 25%, 50%, 74%, 90%
+        "vram_gb": 20,
+    },
+    # Gemma 27B - Best quality, highest VRAM
+    "google/gemma-2-27b-it": {
+        "n_layers": 46,
+        "d_model": 4608,
+        "sae_release": "gemma-scope-27b-pt-res-canonical",
+        "sae_layer": 34,  # ~74% depth
+        "sae_id": "layer_34/width_16k/canonical",
+        "layers_to_probe": [11, 23, 34, 42],  # 25%, 50%, 74%, 91%
+        "vram_gb": 54,
+    },
+    # Llama 3.1 8B - Alternative architecture
+    "meta-llama/Llama-3.1-8B-Instruct": {
+        "n_layers": 32,
+        "d_model": 4096,
+        "sae_release": None,  # No SAE available
+        "sae_layer": 24,
+        "sae_id": None,
+        "layers_to_probe": [8, 16, 24, 30],  # 25%, 50%, 75%, 94%
+        "vram_gb": 16,
+    },
+}
+
+
+def get_model_preset(model_name: str) -> Optional[Dict[str, Any]]:
+    """Get preset configuration for a model, or None if not found."""
+    return MODEL_PRESETS.get(model_name)
+
+
+class ModelConfig(BaseModel):
+    """LLM and interpretability model configuration.
+
+    Auto-configuration: When `auto_configure=True` (default), SAE settings
+    and probe layers are automatically set based on the model name.
+    Supported models: gemma-2-2b-it, gemma-2-9b-it, gemma-2-27b-it, Llama-3.1-8B.
+
+    Example:
+        # Just set the model name - everything else auto-configures
+        config = ModelConfig(name="google/gemma-2-9b-it")
+        # sae_release, sae_layer, sae_id all set automatically
     """
 
+    # Model selection
+    name: str = Field(
+        default="google/gemma-2-2b-it",
+        description="""HuggingFace model name. Tested models:
+        - google/gemma-2-2b-it (fast, ~4GB VRAM)
+        - google/gemma-2-9b-it (better, ~20GB VRAM)
+        - google/gemma-2-27b-it (best, ~54GB VRAM)
+        - meta-llama/Llama-3.1-8B-Instruct (~16GB VRAM)
+        """
+    )
+
+    # Auto-configuration
+    auto_configure: bool = Field(
+        default=True,
+        description="Auto-set SAE and probe settings based on model name"
+    )
+
     # Hardware
-    device: Literal["cuda", "cpu", "mps"] = "cuda"
-    dtype: Literal["float32", "float16", "bfloat16"] = "bfloat16"
+    device: Literal["cuda", "cpu", "mps"] = Field(
+        default="cuda",
+        description="Device to run model on"
+    )
+    dtype: Literal["float32", "float16", "bfloat16"] = Field(
+        default="bfloat16",
+        description="Model dtype for memory/speed tradeoff"
+    )
 
     # TransformerLens settings
-    use_transformerlens: bool = True
-    """Enable activation capture via TransformerLens."""
+    use_transformerlens: bool = Field(
+        default=True,
+        description="Enable activation capture via TransformerLens"
+    )
+    cache_activations: bool = Field(
+        default=True,
+        description="Cache activations for probe training"
+    )
 
-    cache_activations: bool = True
-    """Cache activations for probe training."""
+    # SAE settings (auto-configured if auto_configure=True)
+    use_sae: bool = Field(
+        default=True,
+        description="Enable Sparse Autoencoder analysis"
+    )
+    sae_release: Optional[str] = Field(
+        default=None,
+        description="SAE Lens release name (auto-set from model if None)"
+    )
+    sae_layer: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Which layer to analyze with SAE (auto-set from model if None)"
+    )
+    sae_id: Optional[str] = Field(
+        default=None,
+        description="Specific SAE ID within the release (auto-set from model if None)"
+    )
 
-    # SAE settings
-    use_sae: bool = True
-    """Enable Sparse Autoencoder analysis."""
+    @model_validator(mode='after')
+    def apply_model_preset(self) -> 'ModelConfig':
+        """Auto-configure SAE settings based on model name."""
+        if not self.auto_configure:
+            return self
 
-    sae_release: str = "gemma-scope-2b-pt-res-canonical"
-    """SAE Lens release name."""
+        preset = get_model_preset(self.name)
+        if preset is None:
+            # Unknown model - use defaults or warn
+            if self.sae_release is None:
+                self.use_sae = False  # Disable SAE for unknown models
+            return self
 
-    sae_layer: int = 20
-    """Which layer to analyze with SAE (0-indexed)."""
+        # Apply preset values only if not explicitly set
+        if self.sae_release is None:
+            self.sae_release = preset.get("sae_release")
+        if self.sae_layer is None:
+            self.sae_layer = preset.get("sae_layer")
+        if self.sae_id is None:
+            self.sae_id = preset.get("sae_id")
 
-    sae_id: str = "layer_20/width_16k/canonical"
-    """Specific SAE ID within the release."""
+        # Disable SAE if no release available (e.g., Llama)
+        if self.sae_release is None:
+            self.use_sae = False
+
+        return self
+
+    def get_recommended_probe_layers(self) -> List[int]:
+        """Get recommended layers to probe for this model."""
+        preset = get_model_preset(self.name)
+        if preset:
+            return preset.get("layers_to_probe", [10, 15, 20, 25])
+        return [10, 15, 20, 25]  # Default fallback
+
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get model architecture info."""
+        preset = get_model_preset(self.name)
+        if preset:
+            return {
+                "n_layers": preset.get("n_layers"),
+                "d_model": preset.get("d_model"),
+                "vram_gb": preset.get("vram_gb"),
+                "sae_available": preset.get("sae_release") is not None,
+            }
+        return {"n_layers": None, "d_model": None, "vram_gb": None, "sae_available": False}
 
 
-@dataclass
-class EvaluatorConfig:
+class EvaluatorConfig(BaseModel):
     """Lightweight local evaluator model for ground truth extraction.
 
     The evaluator is a separate (smaller) model that judges whether
@@ -56,133 +187,366 @@ class EvaluatorConfig:
     3. Consistent evaluation across different subject models
     """
 
-    enabled: bool = True
-    """Enable separate evaluator model."""
+    enabled: bool = Field(default=True, description="Enable separate evaluator model")
+    model: str = Field(
+        default="google/gemma-2-2b-it",
+        description="Lightweight model for evaluation (~2GB VRAM)"
+    )
+    max_tokens: int = Field(
+        default=64,
+        gt=0,
+        description="Max tokens for evaluator responses (short = faster)"
+    )
 
-    model: str = "google/gemma-2-2b-it"
-    """Lightweight model for evaluation (~2GB VRAM)."""
 
-    max_tokens: int = 64
-    """Max tokens for evaluator responses (short = faster)."""
+class ProbeConfig(BaseModel):
+    """Linear probe training configuration.
 
+    Token Position for Probing:
+        This implementation uses LAST TOKEN activations for probing, following
+        the standard approach in mechanistic interpretability research:
 
-@dataclass
-class ProbeConfig:
-    """Linear probe training configuration."""
+        - Autoregressive models encode the "answer" in the last token position
+        - The last token contains the most decision-relevant information
+        - This matches Apollo Research's methodology for deception detection
+
+        Alternative approaches (not currently implemented):
+        - Mean pooling: Average across all token positions
+        - First token: For encoder models (not applicable to decoder-only)
+        - Specific positions: e.g., after key phrases
+
+        Reference: Marks et al. 2023 "The Geometry of Truth" uses last token.
+
+    Note: `layers_to_probe` can be auto-configured using `ProbeConfig.for_model()`.
+    """
 
     # Training
-    train_ratio: float = 0.8
-    """Train/test split ratio."""
+    train_ratio: float = Field(
+        default=0.8,
+        gt=0,
+        lt=1,
+        description="Train/test split ratio"
+    )
+    regularization: float = Field(
+        default=1.0,
+        gt=0,
+        description="L2 regularization strength"
+    )
+    max_iter: int = Field(
+        default=1000,
+        gt=0,
+        description="Maximum training iterations"
+    )
 
-    regularization: float = 1.0
-    """L2 regularization strength."""
+    # Layers to probe (use for_model() to auto-set based on model)
+    layers_to_probe: List[int] = Field(
+        default=[10, 15, 20, 25],
+        description="Which layers to train probes on. Use ProbeConfig.for_model() to auto-configure."
+    )
 
-    max_iter: int = 1000
-    """Maximum training iterations."""
+    @classmethod
+    def for_model(cls, model_name: str, **kwargs) -> "ProbeConfig":
+        """Create ProbeConfig with layers optimized for a specific model.
 
-    # Layers to probe
-    layers_to_probe: List[int] = field(default_factory=lambda: [10, 15, 20, 25])
-    """Which layers to train probes on."""
+        Example:
+            probes = ProbeConfig.for_model("google/gemma-2-9b-it")
+            # layers_to_probe = [10, 21, 31, 38] (auto-set for 9B)
+        """
+        preset = get_model_preset(model_name)
+        if preset and "layers_to_probe" in preset:
+            kwargs.setdefault("layers_to_probe", preset["layers_to_probe"])
+        return cls(**kwargs)
+
+    # Token position for activation capture
+    token_position: Literal["last", "mean", "all"] = Field(
+        default="last",
+        description="""Which token position(s) to use for probing:
+        - 'last': Use only the last token activation (default, recommended)
+        - 'mean': Average activations across all token positions
+        - 'all': Concatenate all token positions (increases dimensionality)
+
+        Last token is standard for autoregressive models as it contains
+        the most decision-relevant information for the model's next action.
+        """
+    )
 
     # Validation
-    min_accuracy: float = 0.6
-    """Minimum accuracy threshold for valid probe."""
+    min_accuracy: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Minimum accuracy threshold for valid probe"
+    )
+    run_sanity_checks: bool = Field(
+        default=True,
+        description="Run probe sanity checks (shuffled labels, random features)"
+    )
+    run_cross_scenario_validation: bool = Field(
+        default=True,
+        description="""Run leave-one-scenario-out (LOSO) cross-validation.
 
-    run_sanity_checks: bool = True
-    """Run probe sanity checks (shuffled labels, random features)."""
+        This tests whether the probe generalizes across different scenarios.
+        A probe that only works within-scenario may be learning scenario-specific
+        artifacts rather than general deception features.
+
+        Interpretation of results:
+        - Cross-scenario AUC > 0.7: Probe captures general deception
+        - Cross-scenario AUC < 0.55: Probe may be scenario-specific
+        - Large variance: Some scenarios have different deception patterns
+        """
+    )
+    binary_threshold: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="""Threshold for binarizing continuous labels to binary deceptive/honest.
+
+        Default 0.5 assumes labels are in [0, 1] range with 0.5 as the natural midpoint.
+        For probabilistic labels, 0.5 represents "more likely deceptive than not".
+
+        IMPORTANT: Always report R² (continuous metric) alongside binary metrics
+        (accuracy, AUC) to avoid information loss from binarization.
+
+        Use threshold_sensitivity_analysis() in train_probes.py to check robustness.
+        """
+    )
+    run_threshold_sensitivity: bool = Field(
+        default=True,
+        description="""Run threshold sensitivity analysis to verify 0.5 threshold is appropriate.
+        Results show how metrics change with different thresholds (0.3, 0.4, 0.5, 0.6, 0.7).
+        """
+    )
+
+    @field_validator('layers_to_probe')
+    @classmethod
+    def validate_layers(cls, v):
+        """Ensure layers_to_probe is not empty."""
+        if not v:
+            raise ValueError("layers_to_probe cannot be empty")
+        return v
 
 
-@dataclass
-class CausalConfig:
+class CausalConfig(BaseModel):
     """Causal validation configuration (activation patching, ablation)."""
 
-    enabled: bool = True
-    """Enable causal validation."""
-
-    num_samples: int = 30
-    """Number of samples for causal interventions."""
+    enabled: bool = Field(default=True, description="Enable causal validation")
+    num_samples: int = Field(
+        default=30,
+        gt=0,
+        description="Number of samples for causal interventions"
+    )
 
     # Intervention types
-    run_activation_patching: bool = True
-    """Patch activations between deceptive/honest examples."""
-
-    run_ablation: bool = True
-    """Zero-ablate identified deception features."""
-
-    run_steering: bool = True
-    """Test steering vectors for behavior modification."""
+    run_activation_patching: bool = Field(
+        default=True,
+        description="Patch activations between deceptive/honest examples"
+    )
+    run_ablation: bool = Field(
+        default=True,
+        description="Zero-ablate identified deception features"
+    )
+    run_steering: bool = Field(
+        default=True,
+        description="Test steering vectors for behavior modification"
+    )
 
     # Thresholds
-    min_effect_size: float = 0.1
-    """Minimum effect size to consider significant."""
+    min_effect_size: float = Field(
+        default=0.1,
+        ge=0,
+        le=1,
+        description="Minimum effect size to consider significant"
+    )
 
 
-@dataclass
-class ScenarioConfig:
+class ScenarioConfig(BaseModel):
     """Deception scenario configuration."""
 
-    mode: Literal["emergent", "instructed", "contest"] = "emergent"
-    """Scenario mode:
-    - emergent: Incentive-based deception (no explicit instructions)
-    - instructed: Explicit deception instructions (Apollo-style)
-    - contest: Game-theoretic scenarios (Fishery, Treaty, Gameshow)
-    """
+    mode: Literal["emergent", "instructed", "contest"] = Field(
+        default="emergent",
+        description="""Scenario mode:
+        - emergent: Incentive-based deception (no explicit instructions)
+        - instructed: Explicit deception instructions (Apollo-style)
+        - contest: Game-theoretic scenarios (Fishery, Treaty, Gameshow)
+        """
+    )
+    scenarios: List[str] = Field(
+        default=[
+            "ultimatum_bluff",
+            "capability_bluff",
+            "hidden_value",
+            "info_withholding",
+            "promise_break",
+            "alliance_betrayal",
+        ],
+        description="""Which scenarios to run. Available emergent scenarios:
+        - ultimatum_bluff: Bluffing about walking away
+        - capability_bluff: Overstating capabilities
+        - hidden_value: Hiding true preferences
+        - info_withholding: Strategic information hiding
+        - promise_break: Making promises with intent to break
+        - alliance_betrayal: Forming alliances to betray
+        """
+    )
+    num_trials: int = Field(
+        default=50,
+        gt=0,
+        description="Number of trials per scenario"
+    )
+    max_rounds: int = Field(
+        default=3,
+        gt=0,
+        description="Maximum conversation rounds per trial"
+    )
 
-    scenarios: List[str] = field(default_factory=lambda: [
-        "ultimatum_bluff",
-        "capability_bluff",
-        "hidden_value",
-        "info_withholding",
-        "promise_break",
-        "alliance_betrayal",
-    ])
-    """Which scenarios to run. Available emergent scenarios:
-    - ultimatum_bluff: Bluffing about walking away
-    - capability_bluff: Overstating capabilities
-    - hidden_value: Hiding true preferences
-    - info_withholding: Strategic information hiding
-    - promise_break: Making promises with intent to break
-    - alliance_betrayal: Forming alliances to betray
-    """
-
-    num_trials: int = 50
-    """Number of trials per scenario."""
-
-    max_rounds: int = 3
-    """Maximum conversation rounds per trial."""
+    @field_validator('scenarios')
+    @classmethod
+    def validate_scenarios(cls, v):
+        """Ensure scenarios list is not empty."""
+        if not v:
+            raise ValueError("scenarios list cannot be empty")
+        return v
 
 
-@dataclass
-class ExperimentConfig:
+class ExperimentConfig(BaseModel):
     """Main experiment configuration combining all settings."""
 
     # Sub-configs
-    model: ModelConfig = field(default_factory=ModelConfig)
-    evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)
-    probes: ProbeConfig = field(default_factory=ProbeConfig)
-    causal: CausalConfig = field(default_factory=CausalConfig)
-    scenarios: ScenarioConfig = field(default_factory=ScenarioConfig)
+    model: ModelConfig = Field(default_factory=ModelConfig)
+    evaluator: EvaluatorConfig = Field(default_factory=EvaluatorConfig)
+    probes: ProbeConfig = Field(default_factory=ProbeConfig)
+    causal: CausalConfig = Field(default_factory=CausalConfig)
+    scenarios: ScenarioConfig = Field(default_factory=ScenarioConfig)
 
     # Output
-    output_dir: str = "./results"
-    """Directory for experiment outputs."""
-
-    checkpoint_dir: str = "./checkpoints"
-    """Directory for checkpoints (resume interrupted experiments)."""
-
-    save_activations: bool = False
-    """Save raw activations (large files)."""
+    output_dir: str = Field(
+        default="./results",
+        description="Directory for experiment outputs"
+    )
+    checkpoint_dir: str = Field(
+        default="./checkpoints",
+        description="Directory for checkpoints (resume interrupted experiments)"
+    )
+    save_activations: bool = Field(
+        default=False,
+        description="Save raw activations (large files)"
+    )
 
     # Experiment metadata
-    experiment_name: Optional[str] = None
-    """Optional experiment name for organizing results."""
-
-    random_seed: int = 42
-    """Random seed for reproducibility."""
+    experiment_name: Optional[str] = Field(
+        default=None,
+        description="Optional experiment name for organizing results"
+    )
+    random_seed: int = Field(
+        default=42,
+        description="Random seed for reproducibility. Used when random_seeds is empty."
+    )
+    random_seeds: List[int] = Field(
+        default=[42, 123, 456, 789, 1337],
+        description="""List of random seeds for multi-seed experiments.
+        Running with multiple seeds ensures results are robust and not seed-dependent.
+        Results should be reported as mean ± std across seeds.
+        """
+    )
+    use_multi_seed: bool = Field(
+        default=False,
+        description="""If True, run experiments with all seeds in random_seeds.
+        If False, use only random_seed for faster single-run experiments.
+        """
+    )
 
     # Logging
-    verbose: bool = True
-    log_to_file: bool = True
+    verbose: bool = Field(default=True, description="Enable verbose output")
+    log_to_file: bool = Field(default=True, description="Log output to file")
+
+    def to_dict(self) -> dict:
+        """Convert config to dictionary for JSON serialization."""
+        return self.model_dump()
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ExperimentConfig":
+        """Create config from dictionary."""
+        return cls.model_validate(data)
+
+    def save_json(self, path: str) -> None:
+        """Save config to JSON file."""
+        import json
+        with open(path, 'w') as f:
+            json.dump(self.model_dump(), f, indent=2)
+
+    @classmethod
+    def load_json(cls, path: str) -> "ExperimentConfig":
+        """Load config from JSON file."""
+        import json
+        with open(path, 'r') as f:
+            return cls.model_validate(json.load(f))
+
+    @classmethod
+    def for_model(
+        cls,
+        model_name: str,
+        num_trials: int = 50,
+        scenarios: Optional[List[str]] = None,
+        **kwargs
+    ) -> "ExperimentConfig":
+        """Create fully auto-configured experiment for a specific model.
+
+        This is the easiest way to switch between models - everything
+        (SAE settings, probe layers, etc.) auto-configures based on model.
+
+        Example:
+            # Switch between models with one line:
+            config = ExperimentConfig.for_model("google/gemma-2-2b-it")
+            config = ExperimentConfig.for_model("google/gemma-2-9b-it")
+
+            # With custom settings:
+            config = ExperimentConfig.for_model(
+                "google/gemma-2-9b-it",
+                num_trials=100,
+                scenarios=["ultimatum_bluff", "alliance_betrayal"],
+            )
+
+        Args:
+            model_name: HuggingFace model name
+            num_trials: Number of trials per scenario
+            scenarios: List of scenarios (None = all 6 emergent scenarios)
+            **kwargs: Additional ExperimentConfig parameters
+
+        Returns:
+            Fully configured ExperimentConfig
+        """
+        # Create model config (auto-configures SAE)
+        model_config = ModelConfig(name=model_name)
+
+        # Create probe config with model-appropriate layers
+        probe_config = ProbeConfig.for_model(model_name)
+
+        # Create scenario config
+        scenario_kwargs = {"num_trials": num_trials}
+        if scenarios is not None:
+            scenario_kwargs["scenarios"] = scenarios
+        scenario_config = ScenarioConfig(**scenario_kwargs)
+
+        return cls(
+            model=model_config,
+            probes=probe_config,
+            scenarios=scenario_config,
+            **kwargs
+        )
+
+    def print_config_summary(self) -> None:
+        """Print a summary of the current configuration."""
+        info = self.model.get_model_info()
+        print(f"Model: {self.model.name}")
+        print(f"  Layers: {info.get('n_layers', '?')}, d_model: {info.get('d_model', '?')}")
+        print(f"  VRAM: ~{info.get('vram_gb', '?')}GB")
+        print(f"  SAE: {'enabled' if self.model.use_sae else 'disabled'}", end="")
+        if self.model.use_sae:
+            print(f" (layer {self.model.sae_layer})")
+        else:
+            print()
+        print(f"Probes: layers {self.probes.layers_to_probe}")
+        print(f"Scenarios: {len(self.scenarios.scenarios)} scenarios, {self.scenarios.num_trials} trials each")
 
 
 # Default configurations for common use cases

@@ -12,9 +12,17 @@ Baselines:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional, Callable, Union, TYPE_CHECKING
 import random
 import hashlib
+
+if TYPE_CHECKING:
+    from transformer_lens import HookedTransformer
+
+# Type alias for language models used in this module
+# At runtime, accepts Any for flexibility with different model types
+# The expected type is transformer_lens.HookedTransformer or compatible
+LanguageModel = Any  # Runtime: Any, but expected to be HookedTransformer or similar
 
 
 @dataclass
@@ -170,7 +178,14 @@ class BasicLLMAgent(BaselineAgent):
     Uses same LLM as full agent but with minimal prompting.
     """
 
-    def __init__(self, config: AgentConfig, model: Any = None, seed: int = 42):
+    def __init__(self, config: AgentConfig, model: Optional[LanguageModel] = None, seed: int = 42):
+        """Initialize BasicLLMAgent.
+
+        Args:
+            config: Agent configuration
+            model: Language model (HookedTransformer or compatible with sample_text method)
+            seed: Random seed for reproducibility
+        """
         super().__init__(config, seed)
         self.model = model
         self.agent_name = config.parameters.get('agent_name', 'Negotiator')
@@ -204,7 +219,7 @@ class SingleModuleAgent(BaselineAgent):
     Used to measure individual module contributions.
     """
 
-    def __init__(self, config: AgentConfig, model: Any = None, seed: int = 42):
+    def __init__(self, config: AgentConfig, model: Optional[LanguageModel] = None, seed: int = 42):
         super().__init__(config, seed)
         self.model = model
         self.module_name = config.parameters.get('module_name', 'theory_of_mind')
@@ -302,11 +317,18 @@ def create_fixed_strategy_agent(
 
 def create_basic_llm_agent(
     name: str = "BasicLLMAgent",
-    model: Any = None,
+    model: Optional[LanguageModel] = None,
     goal: str = "Negotiate effectively",
     seed: int = 42
 ) -> BasicLLMAgent:
-    """Create a basic LLM agent without cognitive modules."""
+    """Create a basic LLM agent without cognitive modules.
+
+    Args:
+        name: Agent name
+        model: Language model (HookedTransformer or compatible)
+        goal: Agent's negotiation goal
+        seed: Random seed
+    """
     config = AgentConfig(
         name=name,
         description="Basic LLM without cognitive modules",
@@ -319,11 +341,19 @@ def create_basic_llm_agent(
 def create_single_module_agent(
     name: str = "SingleModuleAgent",
     module_name: str = "theory_of_mind",
-    model: Any = None,
+    model: Optional[LanguageModel] = None,
     goal: str = "Negotiate effectively",
     seed: int = 42
 ) -> SingleModuleAgent:
-    """Create an agent with only one cognitive module enabled."""
+    """Create an agent with only one cognitive module enabled.
+
+    Args:
+        name: Agent name
+        module_name: Which cognitive module to enable
+        model: Language model (HookedTransformer or compatible)
+        goal: Agent's negotiation goal
+        seed: Random seed
+    """
     config = AgentConfig(
         name=name,
         description=f"Agent with only {module_name} module",
@@ -345,8 +375,12 @@ STANDARD_BASELINES = {
 }
 
 
-def create_all_baselines(model: Any = None) -> Dict[str, BaselineAgent]:
-    """Create all standard baseline agents."""
+def create_all_baselines(model: Optional[LanguageModel] = None) -> Dict[str, BaselineAgent]:
+    """Create all standard baseline agents.
+
+    Args:
+        model: Language model for LLM-based baselines (HookedTransformer or compatible)
+    """
     baselines = {}
     for name, factory in STANDARD_BASELINES.items():
         if name == 'basic_llm':
@@ -357,10 +391,15 @@ def create_all_baselines(model: Any = None) -> Dict[str, BaselineAgent]:
 
 
 def create_module_isolation_agents(
-    model: Any = None,
+    model: Optional[LanguageModel] = None,
     goal: str = "Negotiate effectively"
 ) -> Dict[str, SingleModuleAgent]:
-    """Create agents with each module in isolation."""
+    """Create agents with each module in isolation.
+
+    Args:
+        model: Language model (HookedTransformer or compatible)
+        goal: Agent's negotiation goal
+    """
     modules = [
         'theory_of_mind',
         'cultural_adaptation',

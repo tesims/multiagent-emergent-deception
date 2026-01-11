@@ -403,6 +403,7 @@ def train_linear_probe(
     task: str = "regression",  # "regression" or "classification"
     regularization: float = 1.0,
     test_size: float = 0.2,
+    random_state: int = 42,
 ) -> ProbeResult:
     """Train a linear probe on activations.
 
@@ -412,6 +413,7 @@ def train_linear_probe(
         task: "regression" or "classification"
         regularization: Regularization strength (higher = more regularization)
         test_size: Fraction for test set
+        random_state: Random seed for reproducibility (default 42)
 
     Returns:
         ProbeResult with trained probe info
@@ -422,7 +424,7 @@ def train_linear_probe(
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=42
+        X, y, test_size=test_size, random_state=random_state
     )
 
     if task == "regression":
@@ -603,6 +605,7 @@ def compare_probe_methods(
     activations: np.ndarray,
     labels: np.ndarray,
     test_size: float = 0.2,
+    random_state: int = 42,
 ) -> Dict[str, Dict[str, float]]:
     """Compare mass-mean vs logistic regression probes.
 
@@ -611,6 +614,8 @@ def compare_probe_methods(
     Args:
         activations: [N, d_model] activation vectors
         labels: [N] binary labels
+        test_size: Fraction for test set
+        random_state: Random seed for reproducibility (default 42)
 
     Returns:
         Dict with metrics for each method
@@ -621,7 +626,7 @@ def compare_probe_methods(
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
-        activations, labels, test_size=test_size, random_state=42
+        activations, labels, test_size=test_size, random_state=random_state
     )
 
     results = {}

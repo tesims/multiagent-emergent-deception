@@ -55,18 +55,137 @@ class ProbeResult:
         }
 
 
+@dataclass
+class ThresholdSensitivityResult:
+    """Results from threshold sensitivity analysis.
+
+    Helps understand if the default 0.5 binarization threshold is appropriate.
+    """
+    by_threshold: Dict[float, Dict[str, Optional[float]]]
+    """Results for each threshold: {accuracy, f1, precision, recall}"""
+
+    best_threshold: float
+    """Threshold with highest F1 score"""
+
+    is_robust: bool
+    """True if F1 variance across thresholds < 10%"""
+
+    recommendation: str
+    """Human-readable recommendation"""
+
+    def to_dict(self) -> Dict:
+        return {
+            "by_threshold": self.by_threshold,
+            "best_threshold": self.best_threshold,
+            "is_robust": self.is_robust,
+            "recommendation": self.recommendation,
+        }
+
+
+@dataclass
+class LayerAnalysisResult:
+    """Results from analyzing probe performance across layers.
+
+    Used to find the optimal layer for probing and verify expected patterns.
+    """
+    best_layer: int
+    """Layer with highest AUC"""
+
+    peak_auc: float
+    """AUC at best layer"""
+
+    peak_r2: float
+    """R² at best layer"""
+
+    auc_std_across_layers: float
+    """Standard deviation of AUC across layers"""
+
+    is_flat_curve: bool
+    """Warning: True if AUC std < 0.05 (suspicious)"""
+
+    has_expected_inverted_u: Optional[bool]
+    """True if middle layers > early and late (expected pattern)"""
+
+    relative_position: float
+    """Position of best layer (0=first, 1=last)"""
+
+    layer_aucs: Dict[int, float]
+    """AUC for each layer"""
+
+    warnings: List[str]
+    """List of warning messages if patterns are unexpected"""
+
+    def to_dict(self) -> Dict:
+        return {
+            "best_layer": self.best_layer,
+            "peak_auc": self.peak_auc,
+            "peak_r2": self.peak_r2,
+            "auc_std_across_layers": self.auc_std_across_layers,
+            "is_flat_curve": self.is_flat_curve,
+            "has_expected_inverted_u": self.has_expected_inverted_u,
+            "relative_position": self.relative_position,
+            "layer_aucs": self.layer_aucs,
+            "warnings": [w for w in self.warnings if w is not None],
+        }
+
+
+@dataclass
+class GeneralizationResult:
+    """Results from cross-scenario generalization analysis.
+
+    Tests whether the probe generalizes across different scenarios,
+    which is critical for validating it captures general deception features.
+    """
+    by_scenario: Dict[str, Dict[str, Any]]
+    """Per-scenario holdout results"""
+
+    average_r2: Optional[float]
+    """Mean R² across scenarios (can be negative for poor generalization)"""
+
+    average_auc: Optional[float]
+    """Mean AUC across scenarios (>0.7 = good generalization)"""
+
+    std_r2: Optional[float]
+    """Standard deviation of R² across scenarios"""
+
+    std_auc: Optional[float]
+    """Standard deviation of AUC across scenarios"""
+
+    def to_dict(self) -> Dict:
+        return {
+            "by_scenario": self.by_scenario,
+            "average_r2": self.average_r2,
+            "average_auc": self.average_auc,
+            "std_r2": self.std_r2,
+            "std_auc": self.std_auc,
+        }
+
+
 def train_ridge_probe(
     X: np.ndarray,
     y: np.ndarray,
     alpha: float = 10.0,
     use_pca: bool = True,
     n_components: int = 50,
+    random_state: int = 42,
 ) -> Tuple[Ridge, ProbeResult]:
-    """Train a Ridge regression probe."""
+    """Train a Ridge regression probe.
+
+    Args:
+        X: Feature matrix [N, d_model]
+        y: Labels [N]
+        alpha: Ridge regularization strength
+        use_pca: Whether to apply PCA for dimensionality reduction
+        n_components: Number of PCA components
+        random_state: Random seed for reproducibility (default 42)
+
+    Returns:
+        Tuple of (trained Ridge probe, ProbeResult with metrics)
+    """
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=random_state
     )
 
     # Optional PCA to reduce overfitting
@@ -95,6 +214,17 @@ def train_ridge_probe(
     cv_scores = cross_val_score(Ridge(alpha=alpha), X_pca, y, cv=5, scoring='r2')
 
     # Binary metrics
+    # =========================================================================
+    # BINARIZATION THRESHOLD: 0.5 is used as the default threshold because:
+    # 1. Labels are normalized to [0, 1] range where 0.5 is the natural midpoint
+    # 2. For probabilistic labels (e.g., "50% deceptive"), 0.5 is the decision boundary
+    # 3. This matches standard binary classification convention
+    #
+    # LIMITATION: Binary metrics (accuracy, AUC) lose information from continuous
+    # labels. Always report R² alongside binary metrics for continuous ground truth.
+    #
+    # For threshold sensitivity analysis, see threshold_sensitivity_analysis().
+    # =========================================================================
     binary_pred = (test_pred > 0.5).astype(int)
     binary_true = (y_test > 0.5).astype(int)
 
@@ -123,10 +253,20 @@ def train_mass_mean_probe(
     X: np.ndarray,
     y: np.ndarray,
     threshold: float = 0.5,
+    random_state: int = 42,
 ) -> Tuple[np.ndarray, ProbeResult]:
     """
     Train a mass-mean direction probe (Marks & Tegmark method).
     Often more robust than Ridge for binary concepts.
+
+    Args:
+        X: Feature matrix [N, d_model]
+        y: Labels [N]
+        threshold: Threshold for binary classification (default 0.5)
+        random_state: Random seed for train/test split (default 42)
+
+    Returns:
+        Tuple of (direction vector, ProbeResult with metrics)
     """
 
     binary_y = (y > threshold).astype(bool)
@@ -156,7 +296,7 @@ def train_mass_mean_probe(
 
     # Evaluate
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=random_state
     )
 
     test_proj = X_test @ direction
@@ -197,6 +337,74 @@ def train_mass_mean_probe(
     )
 
     return direction, result
+
+
+# =============================================================================
+# THRESHOLD SENSITIVITY ANALYSIS
+# =============================================================================
+
+def threshold_sensitivity_analysis(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    thresholds: List[float] = None,
+) -> Dict[str, Any]:
+    """Analyze how binary classification metrics vary with threshold choice.
+
+    This function helps understand the impact of the 0.5 binarization threshold
+    and whether the probe's performance is robust to threshold changes.
+
+    Args:
+        y_true: Ground truth continuous labels [N]
+        y_pred: Model predictions [N]
+        thresholds: List of thresholds to test (default: [0.3, 0.4, 0.5, 0.6, 0.7])
+
+    Returns:
+        Dict with:
+        - by_threshold: {threshold: {accuracy, f1, precision, recall}}
+        - best_threshold: Threshold with highest F1
+        - is_robust: True if performance is similar across thresholds
+    """
+    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
+    if thresholds is None:
+        thresholds = [0.3, 0.4, 0.5, 0.6, 0.7]
+
+    results = {}
+    for thresh in thresholds:
+        binary_true = (y_true > thresh).astype(int)
+        binary_pred = (y_pred > thresh).astype(int)
+
+        # Skip if only one class present
+        if len(np.unique(binary_true)) < 2:
+            results[thresh] = {"accuracy": None, "f1": None, "note": "single class"}
+            continue
+
+        try:
+            results[thresh] = {
+                "accuracy": float(accuracy_score(binary_true, binary_pred)),
+                "f1": float(f1_score(binary_true, binary_pred, zero_division=0)),
+                "precision": float(precision_score(binary_true, binary_pred, zero_division=0)),
+                "recall": float(recall_score(binary_true, binary_pred, zero_division=0)),
+            }
+        except ValueError:
+            results[thresh] = {"accuracy": None, "f1": None, "error": "scoring failed"}
+
+    # Find best threshold by F1
+    valid_results = {t: r for t, r in results.items() if r.get("f1") is not None}
+    if valid_results:
+        best_threshold = max(valid_results.keys(), key=lambda t: valid_results[t]["f1"])
+        f1_scores = [r["f1"] for r in valid_results.values()]
+        is_robust = (max(f1_scores) - min(f1_scores)) < 0.1  # <10% variation
+    else:
+        best_threshold = 0.5
+        is_robust = False
+
+    return {
+        "by_threshold": results,
+        "best_threshold": float(best_threshold),
+        "is_robust": bool(is_robust),
+        "recommendation": "Threshold choice robust" if is_robust else "Consider optimizing threshold",
+    }
 
 
 # =============================================================================
@@ -461,14 +669,41 @@ def compute_generalization_auc(
     y: np.ndarray,
     scenarios: List[str],
     alpha: float = 10.0,
+    random_state: int = 42,
+    verbose: bool = False,
 ) -> Dict[str, Any]:
     """
-    Compute cross-scenario generalization using AUC (more robust than R²).
+    Compute cross-scenario generalization using leave-one-scenario-out (LOSO) evaluation.
 
-    For each scenario:
-    - Train on all OTHER scenarios
-    - Test on this scenario
-    - Report both R² and AUC
+    This is a CRITICAL validation for deception probes. A probe that generalizes
+    across scenarios is detecting deception-general features, not scenario-specific artifacts.
+
+    Methodology (Leave-One-Scenario-Out Cross-Validation):
+        For each scenario S:
+        1. Train on ALL samples from scenarios OTHER than S
+        2. Test on ALL samples from scenario S
+        3. Report R² and AUC for this holdout
+        4. Repeat for all scenarios
+
+    Interpretation:
+        - High cross-scenario AUC (>0.7): Probe likely captures general deception
+        - Low cross-scenario AUC (<0.55): Probe may be learning scenario artifacts
+        - Large variance: Some scenarios are outliers (different deception types)
+
+    Args:
+        X: Feature matrix [N, d_model]
+        y: Labels [N]
+        scenarios: List of scenario names [N], one per sample
+        alpha: Ridge regularization strength
+        random_state: Random seed for reproducibility
+        verbose: Print per-scenario results
+
+    Returns:
+        Dict with:
+        - by_scenario: Results for each holdout scenario
+        - average_r2: Mean R² across scenarios
+        - average_auc: Mean AUC across scenarios (recommended metric)
+        - std_r2/std_auc: Standard deviations
     """
     unique_scenarios = list(set(scenarios))
     results = {}

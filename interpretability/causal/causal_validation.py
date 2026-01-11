@@ -742,6 +742,7 @@ def probe_faithfulness_test(
     layer: int,
     n_ablations: int = 10,
     verbose: bool = True,
+    random_state: int = 42,
 ) -> CausalValidationResult:
     """
     Probe Faithfulness Test: Check if probe relies on meaningful features.
@@ -761,6 +762,7 @@ def probe_faithfulness_test(
         layer: Layer to test
         n_ablations: Number of top dimensions to ablate
         verbose: Print progress
+        random_state: Random seed for reproducibility (default 42)
 
     Returns:
         CausalValidationResult
@@ -774,8 +776,8 @@ def probe_faithfulness_test(
     if hasattr(X, 'numpy'):
         X = X.numpy()
 
-    # Train baseline probe
-    X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=42)
+    # Train baseline probe (use random_state for reproducibility)
+    X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=random_state)
 
     probe = Ridge(alpha=10.0)
     probe.fit(X_train, y_train)
@@ -795,7 +797,7 @@ def probe_faithfulness_test(
     X_ablated = X.copy()
     X_ablated[:, top_dims] = 0
 
-    X_train_abl, X_test_abl, _, _ = train_test_split(X_ablated, labels, test_size=0.2, random_state=42)
+    X_train_abl, X_test_abl, _, _ = train_test_split(X_ablated, labels, test_size=0.2, random_state=random_state)
 
     probe_ablated = Ridge(alpha=10.0)
     probe_ablated.fit(X_train_abl, y_train)
@@ -843,6 +845,7 @@ def selectivity_test(
     n_random_subsets: int = 10,
     subset_size: int = 50,
     verbose: bool = True,
+    random_state: int = 42,
 ) -> CausalValidationResult:
     """
     Selectivity Test: Random feature subsets should perform at chance.
@@ -857,6 +860,7 @@ def selectivity_test(
         n_random_subsets: Number of random subsets to test
         subset_size: Size of each random subset
         verbose: Print progress
+        random_state: Random seed for reproducibility (default 42)
 
     Returns:
         CausalValidationResult
@@ -877,7 +881,7 @@ def selectivity_test(
         random_dims = np.random.choice(X.shape[1], size=min(subset_size, X.shape[1]), replace=False)
         X_subset = X[:, random_dims]
 
-        X_train, X_test, y_train, y_test = train_test_split(X_subset, labels, test_size=0.2, random_state=42+i)
+        X_train, X_test, y_train, y_test = train_test_split(X_subset, labels, test_size=0.2, random_state=random_state+i)
 
         probe = Ridge(alpha=10.0)
         probe.fit(X_train, y_train)
