@@ -41,7 +41,8 @@ class NegotiationInstructions(entity_component.ContextComponent):
         self._goal = goal
         self._style = negotiation_style
         self._reservation_value = reservation_value
-        self._ethics = ethical_constraints or 'Be honest and fair. Do not deceive.'
+        # Use None check instead of falsy check to allow empty string
+        self._ethics = ethical_constraints if ethical_constraints is not None else 'Be honest and fair. Do not deceive.'
         self._verbose = verbose
 
         # Track negotiation state
@@ -60,8 +61,12 @@ class NegotiationInstructions(entity_component.ContextComponent):
             f'PRIMARY GOAL: {self._goal}\n'
             f'NEGOTIATION STYLE: {self._style}\n'
             f'RESERVATION VALUE: {self._reservation_value} (your minimum acceptable outcome)\n'
-            f'ETHICS: {self._ethics}\n\n'
-            'CORE NEGOTIATION PRINCIPLES:\n'
+        )
+        # Only add ETHICS line if non-empty (allows emergent deception research)
+        if self._ethics:
+            instructions += f'ETHICS: {self._ethics}\n'
+        instructions += (
+            '\nCORE NEGOTIATION PRINCIPLES:\n'
             '1. Know your BATNA and reservation value at all times\n'
             '2. Understand interests behind positions\n'
             '3. Create value before claiming it\n'
