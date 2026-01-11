@@ -178,10 +178,12 @@ def cli():
               help='Run causal validation after probe training')
 @click.option('--causal-samples', type=int, default=20,
               help='Number of samples for causal validation')
+@click.option('--high-only', is_flag=True,
+              help='Run only HIGH_INCENTIVE condition (skip LOW_INCENTIVE)')
 def run(mode, model, device, dtype, scenarios, scenario_name, trials,
         max_rounds, max_tokens, layers, fast, ultrafast, hybrid, sae,
         sae_layer, evaluator, checkpoint_dir, causal, causal_samples,
-        output, verbose):
+        high_only, output, verbose):
     """Run a deception detection experiment.
 
     This command runs the complete pipeline:
@@ -305,6 +307,7 @@ def run(mode, model, device, dtype, scenarios, scenario_name, trials,
             agent_modules=agent_modules,
             ultrafast=ultrafast,
             checkpoint_dir=str(checkpoint_path) if checkpoint_path else None,
+            high_only=high_only,
         )
         all_results["emergent"] = results
 
@@ -401,9 +404,13 @@ def scenarios():
 # Helper functions (private)
 
 def _run_emergent_experiment(runner, scenarios, trials_per_scenario,
-                             max_rounds, agent_modules, ultrafast, checkpoint_dir):
+                             max_rounds, agent_modules, ultrafast, checkpoint_dir,
+                             high_only=False):
     """Run emergent deception experiment."""
-    conditions = [IncentiveCondition.HIGH_INCENTIVE, IncentiveCondition.LOW_INCENTIVE]
+    if high_only:
+        conditions = [IncentiveCondition.HIGH_INCENTIVE]
+    else:
+        conditions = [IncentiveCondition.HIGH_INCENTIVE, IncentiveCondition.LOW_INCENTIVE]
 
     click.echo(click.style("\n" + "=" * 60, fg='cyan'))
     click.echo(click.style("EMERGENT DECEPTION EXPERIMENT", fg='cyan', bold=True))
