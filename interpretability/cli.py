@@ -150,10 +150,10 @@ def cli():
               default='emergent', help='Experiment mode')
 @click.option('--scenarios', type=int, default=3,
               help='Number of scenarios to run (max 6)')
-@click.option('--scenario-name',
+@click.option('--scenario-name', multiple=True,
               type=click.Choice(['ultimatum_bluff', 'capability_bluff', 'hidden_value',
                                'info_withholding', 'promise_break', 'alliance_betrayal']),
-              help='Run a specific scenario only (for parallel execution)')
+              help='Run specific scenario(s). Can be used multiple times: --scenario-name info_withholding --scenario-name ultimatum_bluff')
 @click.option('--trials', '-t', type=int, default=40,
               help='Trials per scenario per condition')
 @click.option('--max-rounds', type=int, default=3,
@@ -228,8 +228,8 @@ def run(mode, model, device, dtype, scenarios, scenario_name, trials,
     all_instructed = get_instructed_scenarios()
 
     if scenario_name:
-        emergent_scenarios = [scenario_name]
-        instructed_scenarios = [scenario_name]
+        emergent_scenarios = list(scenario_name)
+        instructed_scenarios = list(scenario_name)
     else:
         default_scenarios = ["ultimatum_bluff", "hidden_value", "alliance_betrayal"]
         n_scenarios = min(scenarios, 6)
