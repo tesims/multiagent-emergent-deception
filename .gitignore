@@ -92,3 +92,5 @@ data/
 docs/RUNPOD_QUICKSTART.md
 *_QUICKSTART.md
 *.local.md
+.claude
+.deepeval
