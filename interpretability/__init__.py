@@ -75,12 +75,8 @@ from .llm_evaluation import (
     LLMAgentRunner,
     LLMAgentConfig,
     create_mock_model,
-    create_openai_model,
-    create_google_model,
-    create_gemma_model,
     create_ollama_model,
     create_remote_ollama_model,
-    create_together_model,
 )
 
 # Interpretability + Evaluation (single run captures both)
@@ -209,12 +205,8 @@ __all__ = [
     'LLMAgentRunner',
     'LLMAgentConfig',
     'create_mock_model',
-    'create_openai_model',
-    'create_google_model',
-    'create_gemma_model',
     'create_ollama_model',
-    'create_gcp_ollama_model',
-    'create_together_model',
+    'create_remote_ollama_model',
     # Interpretability + Evaluation
     'InterpretabilityRunner',
     'TransformerLensWrapper',

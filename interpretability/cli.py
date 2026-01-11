@@ -171,8 +171,8 @@ def cli():
               help='Enable Gemma Scope SAE feature extraction')
 @click.option('--sae-layer', type=int, default=21,
               help='Layer for SAE feature extraction')
-@click.option('--evaluator', type=click.Choice(['local', 'together', 'google']),
-              default='local', help='Model for ground truth extraction')
+@click.option('--evaluator', type=click.Choice(['local']),
+              default='local', help='Model for ground truth extraction (local uses Gemma-2B)')
 @click.option('--checkpoint-dir', help='Directory for checkpoint saves')
 @click.option('--causal', is_flag=True,
               help='Run causal validation after probe training')

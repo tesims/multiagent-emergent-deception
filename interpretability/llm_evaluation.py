@@ -59,50 +59,6 @@ ALL_MODULES = [
 # REAL LLM MODEL CREATION HELPERS
 # =============================================================================
 
-def create_openai_model(model_name: str = 'gpt-4', api_key: str = None):
-    """Create an OpenAI GPT model for evaluation.
-
-    Args:
-        model_name: Model to use (e.g., 'gpt-4', 'gpt-3.5-turbo')
-        api_key: OpenAI API key (or set OPENAI_API_KEY env var)
-    """
-    from concordia_mini.language_model import gpt_model
-    return gpt_model.GptModel(model_name=model_name, api_key=api_key)
-
-
-def create_google_model(model_name: str = 'gemini-pro', api_key: str = None):
-    """Create a Google AI Studio (Gemini) model for evaluation.
-
-    Args:
-        model_name: Model to use (e.g., 'gemini-pro', 'gemini-1.5-pro')
-        api_key: Google AI API key (or set GOOGLE_API_KEY env var)
-    """
-    from concordia_mini.language_model import google_aistudio_model
-    return google_aistudio_model.GoogleAIStudioLanguageModel(
-        model_name=model_name, api_key=api_key
-    )
-
-
-def create_gemma_model(model_name: str = 'gemma-3-27b-it', api_key: str = None):
-    """Create a Gemma model via Google AI Studio API.
-
-    Gemma 3 models are available through the same API as Gemini.
-    Uses Google Cloud $300 free credits.
-
-    Args:
-        model_name: Gemma model to use. Options:
-            - 'gemma-3-27b-it' (27B, best quality)
-            - 'gemma-3-12b-it' (12B, balanced)
-            - 'gemma-3-4b-it' (4B, faster)
-            - 'gemma-3-1b-it' (1B, fastest)
-        api_key: Google AI API key (or set GOOGLE_API_KEY env var)
-    """
-    from concordia_mini.language_model import google_aistudio_model
-    return google_aistudio_model.GoogleAIStudioLanguageModel(
-        model_name=model_name, api_key=api_key
-    )
-
-
 def create_ollama_model(model_name: str = 'llama2'):
     """Create a local Ollama model for evaluation (no API key needed).
 
@@ -206,17 +162,6 @@ def create_remote_ollama_model(
             return idx, response, {'sample': sample, 'score': score}
 
     return RemoteOllamaModel(model_name=model_name, host=host_url)
-
-
-def create_together_model(model_name: str = 'meta-llama/Llama-2-70b-chat-hf', api_key: str = None):
-    """Create a Together AI model for evaluation.
-
-    Args:
-        model_name: Model to use
-        api_key: Together AI API key
-    """
-    from concordia_mini.language_model import together_ai
-    return together_ai.TogetherAI(model_name=model_name, api_key=api_key)
 
 
 @dataclass

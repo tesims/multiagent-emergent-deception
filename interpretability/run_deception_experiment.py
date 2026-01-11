@@ -286,8 +286,8 @@ def main():
 
     # Evaluator for ground truth extraction
     parser.add_argument(
-        "--evaluator", type=str, choices=['local', 'together', 'google'], default='local',
-        help="Model for ground truth extraction: 'local' (Gemma-2B, ~2GB VRAM, no API), 'together' (API), 'google' (API)"
+        "--evaluator", type=str, choices=['local'], default='local',
+        help="Model for ground truth extraction: 'local' (Gemma-2B, ~2GB VRAM, no API)"
     )
 
     # Training mode

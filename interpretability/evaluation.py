@@ -652,7 +652,7 @@ class InterpretabilityRunner:
         use_hybrid: bool = False,
         use_sae: bool = False,
         sae_layer: int = 21,
-        evaluator_api: str = None,  # 'local', 'together', 'google', or None
+        evaluator_api: str = None,  # 'local' or None
     ):
         # Store device for later use
         self._device = device
@@ -717,8 +717,6 @@ class InterpretabilityRunner:
 
         Options:
             'local': Load lightweight Gemma-2B locally (~2GB VRAM, no API needed)
-            'together': Use Together AI API (requires TOGETHER_API_KEY)
-            'google': Use Google AI Studio API (requires GOOGLE_API_KEY)
         """
         if api == 'local':
             # Load lightweight local model for extraction (no API needed)
@@ -765,41 +763,8 @@ class InterpretabilityRunner:
             except Exception as e:
                 logger.warning("Local evaluator setup failed: %s", e)
                 return None
-
-        elif api == 'together':
-            try:
-                from concordia_mini.language_model import together_ai
-                import os
-                api_key = os.environ.get('TOGETHER_API_KEY')
-                if not api_key:
-                    logger.warning("TOGETHER_API_KEY not set, falling back to local extraction")
-                    return None
-                logger.info("Setting up Together AI evaluator (gemma-3-4b-it)...")
-                return together_ai.TogetherAI(
-                    model_name='google/gemma-3-4b-it',  # Fast, cheap, good at extraction
-                    api_key=api_key,
-                )
-            except Exception as e:
-                logger.warning("Together AI setup failed: %s", e)
-                return None
-        elif api == 'google':
-            try:
-                from concordia_mini.language_model import google_aistudio_model
-                import os
-                api_key = os.environ.get('GOOGLE_API_KEY')
-                if not api_key:
-                    logger.warning("GOOGLE_API_KEY not set, falling back to local extraction")
-                    return None
-                logger.info("Setting up Google AI Studio evaluator (gemini-1.5-flash)...")
-                return google_aistudio_model.GoogleAIStudioModel(
-                    model_name='gemini-1.5-flash',  # Free tier, fast
-                    api_key=api_key,
-                )
-            except Exception as e:
-                logger.warning("Google AI Studio setup failed: %s", e)
-                return None
         else:
-            logger.warning("Unknown evaluator API '%s', falling back to local", api)
+            logger.warning("Unknown evaluator API '%s', only 'local' is supported", api)
             return None
 
     def _create_memory_bank(self):
