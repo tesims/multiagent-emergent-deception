@@ -166,24 +166,14 @@ def run_instructed_experiment(
     all_samples = []
     for scenario in scenarios:
         for condition in conditions:
-            print(f"\n[DEBUG] === Starting {scenario} / {condition.value} ===", flush=True)
-            print(f"[DEBUG] Trials to run: {trials_per_scenario}", flush=True)
-            try:
-                result = runner.run_study(
-                    scenario=scenario,
-                    num_trials=trials_per_scenario,
-                    condition=condition.value,
-                    use_gm=True,
-                )
-                print(f"[DEBUG] === Completed {scenario} / {condition.value} ===", flush=True)
-                print(f"[DEBUG] Samples collected: {len(result.activation_samples)}", flush=True)
-                all_samples.extend(result.activation_samples)
-            except Exception as e:
-                print(f"[DEBUG] === FAILED {scenario} / {condition.value} ===", flush=True)
-                print(f"[DEBUG] Error: {type(e).__name__}: {e}", flush=True)
-                import traceback
-                traceback.print_exc()
-                raise
+            print(f"\nRunning {scenario} / {condition.value}...")
+            result = runner.run_study(
+                scenario=scenario,
+                num_trials=trials_per_scenario,
+                condition=condition.value,
+                use_gm=True,
+            )
+            all_samples.extend(result.activation_samples)
 
     return {"samples": all_samples, "mode": "instructed"}
 
