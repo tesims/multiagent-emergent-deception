@@ -1275,13 +1275,29 @@ Example: yes, yes'''
         # Create two agents
         agent_names = ['Agent_A', 'Agent_B']
         agents = []
+
+        # Get condition-specific goal for instructed experiments
+        agent_goal = f"Negotiate effectively in the {scenario_type} scenario"
+        if condition_id:
+            # For instructed experiments, use condition-specific prompts
+            try:
+                from .scenarios.deception_scenarios import SCENARIOS as INSTRUCTED_SCENARIOS, Condition
+                if scenario_type in INSTRUCTED_SCENARIOS:
+                    cond = Condition.DECEPTIVE if condition_id == 'deceptive' else Condition.HONEST
+                    if cond in INSTRUCTED_SCENARIOS[scenario_type].get('conditions', {}):
+                        agent_goal = INSTRUCTED_SCENARIOS[scenario_type]['conditions'][cond].get(
+                            'system_prompt', agent_goal
+                        )
+            except Exception as e:
+                logger.debug(f"Could not load instructed scenario prompt: {e}")
+
         for i, name in enumerate(agent_names):
             memory_bank = self._create_memory_bank()
             agent = advanced_negotiator.build_agent(
                 model=self.model,
                 memory_bank=memory_bank,
                 name=name,
-                goal=f"Negotiate effectively in the {scenario_type} scenario",
+                goal=agent_goal,
                 modules=agent_modules,
                 module_configs={
                     'theory_of_mind': {
@@ -1518,13 +1534,26 @@ Example: yes, yes'''
         num_trials: int = 10,
         max_rounds: int = 10,
         use_gm: bool = True,
+        condition: str = None,  # For instructed experiments: 'deceptive' or 'honest'
     ) -> EvaluationResult:
-        """Run full study with multiple trials."""
+        """Run full study with multiple trials.
+
+        Args:
+            scenario: Scenario name
+            agent_modules: Agent cognitive modules
+            gm_modules: Game master modules
+            num_trials: Number of trials to run
+            max_rounds: Max rounds per trial
+            use_gm: Whether to use game master
+            condition: For instructed experiments - 'deceptive' or 'honest'
+        """
 
         agent_modules = agent_modules if agent_modules is not None else ['theory_of_mind']
         gm_modules = gm_modules or ['social_intelligence']
 
         print(f"\nRunning {num_trials} trials of {scenario} scenario")
+        if condition:
+            print(f"Condition: {condition}")
         print(f"Agent modules: {agent_modules}")
         print(f"GM modules: {gm_modules if use_gm else 'disabled'}")
         print(f"Max rounds per trial: {max_rounds}")
@@ -1540,6 +1569,7 @@ Example: yes, yes'''
                 gm_modules=gm_modules,
                 max_rounds=max_rounds,
                 use_gm=use_gm,
+                condition_id=condition,  # Pass condition for instructed experiments
             )
             cooperation_scores.append(result['cooperation_score'])
             total_deception += result['deception_detected']
