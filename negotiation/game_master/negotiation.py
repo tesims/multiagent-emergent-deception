@@ -25,7 +25,7 @@ from concordia_mini.components import agent as actor_components
 from concordia_mini.components import game_master as gm_components
 from negotiation.game_master.components import gm_state
 from negotiation.game_master.components import gm_validation
-from negotiation.game_master.components import gm_modules
+from negotiation.game_master.components import gm_modules as gm_modules_registry
 from concordia_mini.language_model import language_model
 from concordia_mini.thought_chains import thought_chains as thought_chains_lib
 from concordia_mini.typing import prefab as prefab_lib
@@ -313,14 +313,14 @@ class NegotiationGameMaster(prefab_lib.Prefab):
 
     # Auto-detect modules if requested
     if auto_detect_modules:
-      agent_modules = gm_modules.detect_agent_modules(self.entities)
-      suggested_modules = gm_modules.suggest_gm_modules(agent_modules)
+      agent_modules = gm_modules_registry.detect_agent_modules(self.entities)
+      suggested_modules = gm_modules_registry.suggest_gm_modules(agent_modules)
       gm_modules.extend([m for m in suggested_modules if m not in gm_modules])
 
     # Create module instances
     for module_name in gm_modules:
       config = gm_module_configs.get(module_name, {})
-      module_instance = gm_modules.NegotiationGMModuleRegistry.create_module(
+      module_instance = gm_modules_registry.NegotiationGMModuleRegistry.create_module(
           module_name, config
       )
       if module_instance:
