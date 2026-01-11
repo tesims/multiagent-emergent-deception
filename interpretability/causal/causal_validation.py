@@ -290,8 +290,11 @@ def activation_patching_test(
             print(f"  Testing prompt {i+1}/{n_test}...", flush=True)
 
         try:
-            # Tokenize
-            tokens = model.to_tokens(prompt)
+            # Tokenize with truncation
+            max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+            tokens = model.to_tokens(prompt, truncate=True)
+            if tokens.shape[1] > max_ctx:
+                tokens = tokens[:, -max_ctx:]
 
             # Get baseline logits
             with torch.no_grad():
@@ -361,7 +364,10 @@ def activation_patching_test(
                 return activation
 
             prompt = test_prompts[0]
-            tokens = model.to_tokens(prompt)
+            max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+            tokens = model.to_tokens(prompt, truncate=True)
+            if tokens.shape[1] > max_ctx:
+                tokens = tokens[:, -max_ctx:]
 
             with torch.no_grad():
                 baseline = model(tokens)
@@ -492,7 +498,10 @@ def ablation_test(
             print(f"  Testing prompt {i+1}/{n_test}...", flush=True)
 
         try:
-            tokens = model.to_tokens(prompt)
+            max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+            tokens = model.to_tokens(prompt, truncate=True)
+            if tokens.shape[1] > max_ctx:
+                tokens = tokens[:, -max_ctx:]
 
             # Baseline
             with torch.no_grad():
@@ -647,7 +656,10 @@ def steering_vector_test(
 
         for i, prompt in enumerate(test_prompts[:n_test]):
             try:
-                tokens = model.to_tokens(prompt)
+                max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+                tokens = model.to_tokens(prompt, truncate=True)
+                if tokens.shape[1] > max_ctx - max_new_tokens:
+                    tokens = tokens[:, -(max_ctx - max_new_tokens):]
 
                 # Generate baseline
                 with torch.no_grad():

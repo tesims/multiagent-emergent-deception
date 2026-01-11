@@ -232,7 +232,10 @@ def extract_activations(
     Returns:
         ActivationCache with requested activations
     """
-    tokens = model.to_tokens(text)
+    max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+    tokens = model.to_tokens(text, truncate=True)
+    if tokens.shape[1] > max_ctx:
+        tokens = tokens[:, -max_ctx:]
     n_layers = model.cfg.n_layers
     layers = layers or list(range(n_layers))
 

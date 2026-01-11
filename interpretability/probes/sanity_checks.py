@@ -308,7 +308,10 @@ def run_causal_validation(
                 return activation
 
             # Get baseline output
-            tokens = model.to_tokens(test_prompt)
+            max_ctx = getattr(model.cfg, 'n_ctx', 8192)
+            tokens = model.to_tokens(test_prompt, truncate=True)
+            if tokens.shape[1] > max_ctx:
+                tokens = tokens[:, -max_ctx:]
             baseline_logits = model(tokens)
 
             # Get intervened output
